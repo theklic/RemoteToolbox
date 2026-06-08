@@ -34,12 +34,7 @@ def _make_assembler(config: Config):
     async def assemble() -> Orchestrator:
         toolset = await load_tools(config.tools)
         llm = build_backend(config.llm)
-        return Orchestrator(
-            llm=llm,
-            toolset=toolset,
-            agent_config=config.agent,
-            llm_runtime=config.llm.ollama,
-        )
+        return Orchestrator(llm=llm, toolset=toolset, agent_config=config.agent)
 
     return assemble
 

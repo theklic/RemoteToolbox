@@ -65,7 +65,12 @@ def _git_init(target: Path, log: Callable[[str], None]) -> None:
             ["git", *args], cwd=target, capture_output=True, text=True, check=False
         )
 
-    run("init")
+    # Create the repo on `main` to match what MANAGING_TOOLS.md documents
+    # (`git switch main`, `git push origin main`). `-b` needs git >= 2.28;
+    # fall back to setting HEAD before the first commit on older versions.
+    if run("init", "-b", "main").returncode != 0:
+        run("init")
+        run("symbolic-ref", "HEAD", "refs/heads/main")
     run("add", "-A")
     commit = run("commit", "-m", "My tools: initial commit")
     if commit.returncode == 0:

@@ -50,6 +50,31 @@ def test_loader_skips_hidden_vendor_and_private_files(tmp_path: Path) -> None:
     assert toolset.names() == ["weather"]
 
 
+def test_tool_can_import_sibling_private_helper(tmp_path: Path) -> None:
+    # The documented pattern: a tool imports a sibling `_helper.py`.
+    _write(
+        tmp_path / "money" / "_money_helper.py",
+        """
+        def format_amount(n: int) -> str:
+            return f"${n}.00"
+        """,
+    )
+    _write(
+        tmp_path / "money" / "tool.py",
+        """
+        from remotetoolbox import tool
+        from _money_helper import format_amount
+
+        @tool(description="Format a price.")
+        def price(amount: int) -> str:
+            return format_amount(amount)
+        """,
+    )
+    toolset = asyncio.run(load_tools(ToolsConfig(paths=[str(tmp_path)])))
+    assert "price" in toolset.names()
+    assert asyncio.run(toolset.call("price", {"amount": 5})) == "$5.00"
+
+
 def test_loader_expands_user_home(tmp_path: Path, monkeypatch) -> None:
     # Point HOME at tmp so "~/mytools" resolves into the tmp tree.
     monkeypatch.setenv("HOME", str(tmp_path))

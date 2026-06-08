@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-from .config import AgentConfig, OllamaConfig
+from .config import AgentConfig
 from .llm.base import LLMBackend, LLMMessage
 from .tooling import Toolset
 
@@ -27,12 +27,11 @@ class Orchestrator:
         llm: LLMBackend,
         toolset: Toolset,
         agent_config: AgentConfig,
-        llm_runtime: OllamaConfig,
     ) -> None:
         self.llm = llm
         self.toolset = toolset
         self.agent = agent_config
-        self.max_tool_rounds = llm_runtime.max_tool_rounds
+        self.max_tool_rounds = agent_config.max_tool_rounds
         self._histories: dict[str, list[LLMMessage]] = defaultdict(list)
 
     def reset(self, chat_id: str) -> None:
@@ -45,14 +44,35 @@ class Orchestrator:
         await self.toolset.aclose()
 
     async def handle(self, chat_id: str, user_text: str) -> str:
-        """Process one user message and return the agent's text reply."""
+        """Process one user message and return the agent's text reply.
+
+        Operational failures (e.g. the LLM backend being unreachable) are caught
+        and returned as a readable message rather than raised, so a chat frontend
+        never crashes on a transient backend error.
+        """
         history = self._histories[chat_id]
         history.append(LLMMessage(role="user", content=user_text))
 
         messages = self._build_messages(history)
         tools = self.toolset.ollama_tools() or None
 
-        for round_num in range(self.max_tool_rounds + 1):
+        try:
+            return await self._run(chat_id, history, messages, tools)
+        except Exception as exc:  # noqa: BLE001 - surface backend errors as chat text
+            # One clean line by default; full traceback only when debugging.
+            log.error("chat=%s agent loop failed: %s", chat_id, exc)
+            log.debug("traceback for chat=%s", chat_id, exc_info=True)
+            self._trim(history)
+            return f"⚠️ {exc}"
+
+    async def _run(
+        self,
+        chat_id: str,
+        history: list[LLMMessage],
+        messages: list[LLMMessage],
+        tools: list[dict] | None,
+    ) -> str:
+        for _round in range(self.max_tool_rounds + 1):
             reply = await self.llm.chat(messages, tools=tools)
             messages.append(reply)
             history.append(reply)
@@ -63,7 +83,10 @@ class Orchestrator:
 
             # The model wants to call tools. Run them, feed results back, loop.
             for call in reply.tool_calls:
-                log.info("chat=%s calling tool %s(%s)", chat_id, call.name, call.arguments)
+                # Log argument NAMES at INFO; full values only at DEBUG, so a
+                # secret passed as a tool argument isn't logged by default.
+                log.info("chat=%s calling tool %s(%s)", chat_id, call.name, ", ".join(call.arguments))
+                log.debug("chat=%s tool %s args=%r", chat_id, call.name, call.arguments)
                 result = await self.toolset.call(call.name, call.arguments)
                 tool_msg = LLMMessage(role="tool", content=result, name=call.name)
                 messages.append(tool_msg)

@@ -43,9 +43,12 @@ Full details: [`docs/WRITING_TOOLS.md`](docs/WRITING_TOOLS.md). Copyable
 examples: [`examples/tools/`](examples/tools/).
 
 **If the user versions their tools** (there's a `CHANGELOG.md` in the tools
-directory, or `tools.paths` points at a separate repo), add a dated entry to that
-`CHANGELOG.md` describing what you added/changed, and commit it to the **user's
-tools repo — never this one**. See [`docs/MANAGING_TOOLS.md`](docs/MANAGING_TOOLS.md).
+directory, or `tools.paths` points at a separate repo), add an entry to that
+`CHANGELOG.md` — a new dated `## YYYY-MM-DD` heading as the template shows —
+describing what you added/changed, and commit it to the **user's tools repo —
+never this one**. To set up such a repo, point them at
+`python -m remotetoolbox init-tools <path>`. See
+[`docs/MANAGING_TOOLS.md`](docs/MANAGING_TOOLS.md).
 
 ### Do NOT, when adding a tool:
 
@@ -63,11 +66,13 @@ src/remotetoolbox/
 ├── config.py          pydantic config models; loads config.yaml + .env (${VAR} expansion)
 ├── registry.py        @tool decorator + JSON-schema generation  ← STABLE PUBLIC API
 ├── orchestrator.py    the agent loop (chat → LLM → tools → reply)
+├── scaffold.py        `init-tools` — scaffolds a user's separate tools repo
 ├── llm/               LLMBackend interface + Ollama backend
 ├── chat/              ChatAdapter interface + console/telegram adapters
 └── tooling/           tool discovery (loader) + optional external MCP client
 tools/                 USER tools live here — GITIGNORED
 examples/tools/        committed, copyable example tools
+examples/tools-repo/   template for a user's own versioned tools repo
 docs/                  architecture, writing tools, deployment, security, adapters
 ```
 
@@ -123,9 +128,10 @@ so keep them working when you change the `@tool` API.
 - **Never commit** anything under `tools/`, `.env`, `config.yaml`, or any
   credential. `.gitignore` enforces this — keep it that way. If you introduce a
   new secret/tool location, add it to `.gitignore` in the same change.
-- Quick check before committing:
+- Quick check before committing (prints `clean` when nothing private is tracked):
   ```bash
-  git ls-files | grep -E 'tools/(?!README|\.gitkeep)|\.env$|config\.yaml$' || echo clean
+  git ls-files | grep -E '^tools/|^\.env$|^config\.yaml$' \
+    | grep -vE '^tools/(README\.md|\.gitkeep)$' || echo clean
   ```
 - Do not create pull requests unless the user explicitly asks.
 

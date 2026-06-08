@@ -4,11 +4,11 @@ All notable changes to **my tools** are recorded here. This is your safety net:
 when something breaks, the changelog tells you what changed and which commit/tag
 to roll back to.
 
-Format loosely follows [Keep a Changelog](https://keepachangelog.com). Newest at
-the top. Tag known-good states in git (e.g. `git tag good-2026-06-08`) so you can
-return to them quickly.
+Format loosely follows [Keep a Changelog](https://keepachangelog.com). Add a new
+dated `## YYYY-MM-DD` section at the top for each change. Tag known-good states in
+git (e.g. `git tag good-2026-06-08`) so you can return to them quickly.
 
-## [Unreleased]
+## 2026-06-08
 ### Added
 - `hello` — starter greeting tool (from the template).
 

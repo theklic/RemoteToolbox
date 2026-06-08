@@ -146,7 +146,10 @@ def test_config_doc_has_no_obvious_stragglers() -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 _MD_FILES = sorted(
-    p for p in ROOT.rglob("*.md") if not any(part in {".venv", ".git", "node_modules"} for part in p.parts)
+    p
+    for p in ROOT.rglob("*.md")
+    # qa/ holds running QA scratch notes — not project docs, so don't link-check them.
+    if not any(part in {".venv", ".git", "node_modules", "qa"} for part in p.parts)
 )
 _LINK_RE = re.compile(r"\[(?:[^\]]+)\]\(([^)]+)\)")
 _HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*$")

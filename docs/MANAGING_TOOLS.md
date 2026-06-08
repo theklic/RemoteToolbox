@@ -118,6 +118,7 @@ gentlest to bluntest:
 
 ```bash
 git revert HEAD          # makes a new commit that reverses the last one
+# (opens your editor for the message; add --no-edit to skip that)
 ```
 
 **Jump back to a known-good tag, then move forward again:**
