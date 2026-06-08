@@ -79,7 +79,13 @@ def _stringify(result: Any) -> str:
 
 
 def _import_file(path: Path) -> None:
-    """Import a standalone .py file so its @tool decorators run."""
+    """Import a standalone .py file so its @tool decorators run.
+
+    The file's own directory is put on ``sys.path`` so a tool can import a
+    sibling private helper (e.g. ``from _client import ...``). Helper module
+    names are resolved by bare name and cached globally, so keep them unique
+    across tool folders (prefix them, e.g. ``_weather_client.py``).
+    """
     module_name = f"rtb_tool_{path.stem}_{abs(hash(path)) & 0xFFFFFF:x}"
     spec = importlib.util.spec_from_file_location(module_name, path)
     if spec is None or spec.loader is None:
@@ -87,6 +93,11 @@ def _import_file(path: Path) -> None:
         return
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
+
+    parent = str(path.parent)
+    if parent not in sys.path:
+        sys.path.insert(0, parent)
+
     spec.loader.exec_module(module)
 
 

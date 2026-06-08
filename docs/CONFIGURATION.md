@@ -42,7 +42,11 @@ The `.env` file defaults to `./.env`, overridable with `--env`.
 - Expanded **recursively** through strings, lists, and dicts in the YAML.
 - An **undefined** variable expands to an **empty string** (not an error). A
   blank `token:` or `allowed_users:` is usually the real cause of "nothing
-  works" — check your `.env`.
+  works" — check your `.env`. ⚠️ Because of this, a `${VAR}` reference in
+  `config.yaml` **overrides the field's built-in default with empty** when the
+  variable is unset — e.g. `host: ${OLLAMA_HOST}` resolves to `""`, *not*
+  `http://localhost:11434`, if `OLLAMA_HOST` isn't set. Keep referenced vars
+  defined in `.env` (the shipped `.env.example` pre-fills `OLLAMA_HOST`).
 - Lowercase or mixed-case `${var}` is **not** expanded. Use uppercase env names.
 
 ---

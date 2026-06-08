@@ -17,7 +17,10 @@ This is enforced by [`.gitignore`](../.gitignore). Before pushing, verify:
 
 ```bash
 git status --ignored        # your tools/ and .env should appear under "Ignored"
-git ls-files | grep -E 'tools/|\.env$|config\.yaml$'   # should print NOTHING
+# Prints private tools/secrets if any were committed; otherwise prints "clean".
+# (The committed examples/, tools/README.md and tools/.gitkeep are expected.)
+git ls-files | grep -E '^tools/|^\.env$|^config\.yaml$' \
+  | grep -vE '^tools/(README\.md|\.gitkeep)$' || echo clean
 ```
 
 If you add new secret locations, **add them to `.gitignore` first**.
@@ -93,7 +96,7 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for hardening the running service.
 ## Quick audit before you push
 
 ```bash
-git ls-files | grep -Ev '^(examples/|docs/|src/|tests/)' | grep -iE 'token|secret|key|\.env|config\.yaml' || echo "clean"
+git ls-files | grep -Ev '^(examples/|docs/|src/|tests/)|\.example$' | grep -iE 'token|secret|key|(^|/)\.env$|config\.yaml' || echo "clean"
 ```
 
 Output should be `clean`.

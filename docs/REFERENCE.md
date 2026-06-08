@@ -48,7 +48,10 @@ Behavior:
 - Returns the **original function unchanged** — it stays normally callable/testable.
 - Registers a [`ToolSpec`](#toolspec) into the process-global `REGISTRY` dict
   (keyed by name) at **import time**.
-- A duplicate name raises `ValueError` immediately (see [errors](#error--message-reference)).
+- A duplicate name raises `ValueError` immediately *within a single file*. A name
+  that collides with a tool from an **already-loaded** file instead makes that
+  file fail to import — the loader logs it and skips it (the first tool wins); it
+  is not a hard crash. See [tool discovery](#tool-discovery-rules).
 
 Example with an explicit schema (for constraints type hints can't express):
 
@@ -98,11 +101,12 @@ When you don't pass `parameters=`, the schema is built from the signature by
 of the docstring is used; if there's no docstring, the function name with
 underscores turned into spaces.
 
-> **Gotcha — docstring `word: text` lines.** Any line like `Returns: the result`
-> is parsed as a `name: description` pair. It's only *applied* if `name` matches a
-> real parameter, so stray lines are harmless — but if you have a parameter named
-> `returns`, that line would become its description. Keep argument doc lines
-> clean: `city: the city name`.
+> **Gotcha — docstring `word: text` lines.** Any line like `note: see below` is
+> parsed as a `name: description` pair (case-sensitively). It's only *applied* if
+> `name` exactly matches a real parameter, so stray lines are harmless — a
+> capitalized `Returns:` won't collide with a `returns` parameter. The only real
+> hazard is a lowercase line whose key is literally one of your parameter names.
+> Keep argument doc lines clean: `city: the city name`.
 
 ---
 

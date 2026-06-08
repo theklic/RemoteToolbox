@@ -41,15 +41,25 @@ What each part does:
 - Anywhere under a directory listed in `config.yaml` → `tools.paths` (default
   `./tools`). The loader scans **recursively**.
 - One folder per tool (or per group) keeps things tidy, but any layout works.
-- Files/folders starting with `_` are **skipped** — use them for shared helpers:
+- Files/folders starting with `_` are **skipped** by discovery — use them for
+  shared helper code. The loader puts each tool file's own directory on the
+  import path, so a tool can import a **sibling** helper by name:
 
   ```
   tools/
   ├── weather/
   │   ├── tool.py        # @tool functions  (loaded)
-  │   └── _client.py     # helper, imported by tool.py  (NOT scanned)
+  │   └── _client.py     # helper, NOT scanned but importable from tool.py
   ```
 
+  ```python
+  # tools/weather/tool.py
+  from _client import fetch          # imports the sibling _client.py
+  ```
+
+  Helper modules are imported by **bare name and cached globally**, so keep their
+  names unique across your tool folders (e.g. `_weather_client.py`, not a generic
+  `_client.py` in every folder).
 - Multiple `@tool` functions per file is fine.
 
 ## Supported parameter types
@@ -115,10 +125,16 @@ import os
 
 @tool(description="Send myself a push notification.")
 def notify(message: str) -> str:
-    token = os.environ["PUSHOVER_TOKEN"]   # set in .env
+    token = os.environ.get("PUSHOVER_TOKEN")
+    if not token:
+        return "PUSHOVER_TOKEN isn't set — add it to .env."   # friendly, not a crash
     ...
     return "Sent."
 ```
+
+> Using `os.environ.get(...)` and returning a clear message is gentler than
+> `os.environ["X"]`, which raises a `KeyError` — that's safely caught and shown
+> to the model, but it logs a full traceback for a routine "you forgot to set it".
 
 Add the variable to `.env`:
 
