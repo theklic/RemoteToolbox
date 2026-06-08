@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "remotetoolbox"
+version = "0.1.0"
+description = "Chat with your own tools, running on your own local LLM, from anywhere."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "RemoteToolbox contributors" }]
+keywords = ["mcp", "ollama", "llm", "telegram", "self-hosted", "agent", "tools"]
+dependencies = [
+    "httpx>=0.27",          # talking to Ollama
+    "pydantic>=2.6",        # config models
+    "pyyaml>=6.0",          # config files
+    "python-dotenv>=1.0",   # .env loading
+]
+
+[project.optional-dependencies]
+telegram = ["python-telegram-bot>=21.0"]
+mcp = ["mcp>=1.0"]                          # connect to external MCP servers
+dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.9"]
+# Convenience: install everything.
+all = ["python-telegram-bot>=21.0", "mcp>=1.0"]
+
+[project.scripts]
+remotetoolbox = "remotetoolbox.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/theklic/RemoteToolbox"
+Documentation = "https://github.com/theklic/RemoteToolbox/tree/main/docs"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
