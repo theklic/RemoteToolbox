@@ -10,12 +10,23 @@ A self-hosted framework: **chat frontend → local LLM (Ollama) → user-written
 tools**. The repo ships **framework + docs only**. Users' actual tools and all
 credentials are gitignored and never committed.
 
+> **This does NOT mean "don't create tools here."** Tools you write **go in the
+> `./tools/` directory and run from there** — that's the one correct place for
+> them. The directory is gitignored *on purpose* so the user's private tools stay
+> off GitHub; the framework still loads them from `./tools/` at startup.
+> **Gitignored = private, not off-limits.** "Never commit tools" means don't
+> `git add`/commit them — it does **not** mean don't create them. (If you find
+> yourself avoiding `./tools/`, you've read this backwards.)
+
 ## The #1 task: "add a tool that does X"
 
 This is what most users will ask. Do exactly this:
 
-1. Create `tools/<name>/tool.py` (the `tools/` dir is gitignored — that's
-   correct and intended; the file is for the user's machine, not for committing).
+1. Create the file at `tools/<name>/tool.py` — **yes, really under `tools/`.**
+   That dir is gitignored (so the tool stays private and you won't — and
+   shouldn't — `git add` it), but the file must exist there because that's where
+   RemoteToolbox discovers tools at startup. Creating it is correct; committing
+   it is not.
 2. Write a function decorated with `@tool` from `remotetoolbox`:
 
    ```python
@@ -52,7 +63,10 @@ never this one**. To set up such a repo, point them at
 
 ### Do NOT, when adding a tool:
 
-- Don't commit anything under `tools/` or any secret — see "Git rules" below.
+- Don't *commit* the tool — it lives under the gitignored `tools/` and stays
+  there (see "Git rules"). This is about `git add`/commit only; the tool file
+  **should** exist under `tools/`. Don't put it anywhere else, and don't skip
+  creating it.
 - Don't add a broad `run_shell(cmd)` / `exec(code)` tool unless the user
   explicitly asks and understands the risk (see [`docs/SECURITY.md`](docs/SECURITY.md)).
 - Don't add heavy dependencies to the core; if a tool needs a library, the user
@@ -126,8 +140,10 @@ so keep them working when you change the `@tool` API.
 
 - Develop framework/doc changes normally and commit them.
 - **Never commit** anything under `tools/`, `.env`, `config.yaml`, or any
-  credential. `.gitignore` enforces this — keep it that way. If you introduce a
-  new secret/tool location, add it to `.gitignore` in the same change.
+  credential. `.gitignore` enforces this — keep it that way. (Creating tool files
+  under `tools/` is expected and correct; they're gitignored, so they simply
+  never get staged. "Don't commit" ≠ "don't create.") If you introduce a new
+  secret/tool location, add it to `.gitignore` in the same change.
 - Quick check before committing (prints `clean` when nothing private is tracked):
   ```bash
   git ls-files | grep -E '^tools/|^\.env$|^config\.yaml$' \
