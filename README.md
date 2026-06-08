@@ -186,17 +186,23 @@ restart. That's the "vibe-coding" workflow this project is built around.
 
 ## Documentation
 
-Docs are split by **who they're for**. Start with whichever matches you:
+Docs are **layered**: skim the top, point your coding agent at it, and only dig
+into the reference layer when you're stuck or your agent needs an exact answer.
+The **[Documentation index](docs/README.md)** explains the layering and has a
+"find it by goal" table — start there if you're not sure where to look.
 
-| Doc | Who it's for | What's in it |
-|-----|--------------|--------------|
-| [Glossary](docs/GLOSSARY.md) | 🐣 **Beginners** | Plain-English definitions of every term (AI, model, tool, MCP…). |
-| [Writing Tools](docs/WRITING_TOOLS.md) | 🔧 **Tool makers** | How to build tools. The main "how do I add stuff" guide. |
-| [Deployment](docs/DEPLOYMENT.md) | 🏠 **Home-server setup** | Full install, Telegram, running it 24/7, troubleshooting. |
-| [Security](docs/SECURITY.md) | 🔒 **Everyone** | Keeping passwords safe and controlling who can use your bot. |
-| [Architecture](docs/ARCHITECTURE.md) | 🛠️ **Developers** | How the internals fit together. |
-| [Chat Adapters](docs/CHAT_ADAPTERS.md) | 🛠️ **Developers** | Add a new chat app (Discord, Matrix, …). |
-| [CLAUDE.md](CLAUDE.md) | 🤖 **AI assistants** | Conventions for AI tools extending this project (machine-facing). |
+| Doc | Layer | Who it's for | What's in it |
+|-----|-------|--------------|--------------|
+| [Docs index](docs/README.md) | — | **Everyone** | Map of all docs + reading paths by goal. |
+| [Glossary](docs/GLOSSARY.md) | Get going | 🐣 **Beginners** | Plain-English definitions of every term (AI, model, tool, MCP…). |
+| [Writing Tools](docs/WRITING_TOOLS.md) | Guide | 🔧 **Tool makers** | How to build tools. The main "how do I add stuff" guide. |
+| [Deployment](docs/DEPLOYMENT.md) | Guide | 🏠 **Home-server setup** | Full install, Telegram, running it 24/7, troubleshooting. |
+| [Security](docs/SECURITY.md) | Guide | 🔒 **Everyone** | Keeping passwords safe and controlling who can use your bot. |
+| [Configuration](docs/CONFIGURATION.md) | Reference | ⚙️ **Operators / agents** | Every `config.yaml` key and env var, with types & defaults. |
+| [Reference](docs/REFERENCE.md) | Reference | 📐 **Builders / agents** | Exact contracts, behaviors, and an error-message lookup. |
+| [Architecture](docs/ARCHITECTURE.md) | Reference | 🛠️ **Developers** | How the internals fit together. |
+| [Chat Adapters](docs/CHAT_ADAPTERS.md) | Guide | 🛠️ **Developers** | Add a new chat app (Discord, Matrix, …). |
+| [CLAUDE.md](CLAUDE.md) | Get going | 🤖 **AI assistants** | Conventions for AI tools extending this project (machine-facing). |
 
 ---
 

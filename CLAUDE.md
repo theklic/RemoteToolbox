@@ -112,6 +112,20 @@ generator and registry are the highest-value things to keep covered.
   ```
 - Do not create pull requests unless the user explicitly asks.
 
+## Where to look things up
+
+These two reference docs are kept exact and greppable — check them before
+reading source:
+
+- [`docs/REFERENCE.md`](docs/REFERENCE.md) — every contract (`@tool`, schema
+  rules, `LLMBackend`, `ChatAdapter`, the orchestrator loop) **and an
+  error-message reference** (search it for any error string you hit).
+- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — every `config.yaml` key and
+  env var, with types and defaults.
+
+If you change a contract, default, or error message, update those two docs in the
+**same commit** so they stay accurate.
+
 ## When unsure
 
 Read [`orchestrator.py`](src/remotetoolbox/orchestrator.py) first — it's short

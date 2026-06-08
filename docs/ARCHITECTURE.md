@@ -31,7 +31,7 @@ extension points with tiny interfaces.
    to the adapter and shown to the user.
 
 The whole loop lives in [`orchestrator.py`](../src/remotetoolbox/orchestrator.py)
-and is ~70 lines. Read it — it's the best way to understand the system.
+and is under 100 lines. Read it — it's the best way to understand the system.
 
 ## The three extension points
 

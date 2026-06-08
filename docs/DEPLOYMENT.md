@@ -144,11 +144,24 @@ sudo systemctl restart remotetoolbox      # or Ctrl-C + rerun in dev
 
 ## Troubleshooting
 
-| Symptom | Likely cause |
+Symptom-based quick table below. For the **exact error string** you saw and its
+fix, see [Reference → Error & message reference](REFERENCE.md#error--message-reference).
+To see more detail while debugging, set `logging.level: DEBUG` in `config.yaml` —
+it logs every tool file loaded and every tool call.
+
+| Symptom | Likely cause & fix |
 |---|---|
-| "Could not reach Ollama…" | `ollama serve` not running, or wrong `OLLAMA_HOST`. |
-| Bot replies "⛔ Not authorized." | Your user ID isn't in `RTB_ALLOWED_USERS`. |
-| Bot ignores everyone | Allowlist is empty (safe default) — add your ID. |
-| Model never calls tools | Model doesn't support tool calling — switch models. |
-| Tool not found | File outside `tools.paths`, named with `_`, or import error (check logs). |
-| Tool changes don't apply | You didn't restart the process. |
+| "Could not reach Ollama…" | `ollama serve` not running, or wrong `OLLAMA_HOST`. Test: `curl $OLLAMA_HOST/api/tags`. |
+| Bot replies "⛔ Not authorized." | Your user ID isn't in `RTB_ALLOWED_USERS`. Get it from @userinfobot. |
+| Bot ignores everyone / never replies | Allowlist is empty (safe default) — add your ID. Or `adapter` is still `console`. |
+| Model never calls tools | Model doesn't support tool calling — switch to `llama3.1`, `qwen2.5`, `mistral-nemo`. |
+| Model calls the wrong tool / bad args | Vague `description=` or loose types — tighten them (see [WRITING_TOOLS](WRITING_TOOLS.md#designing-tools-small-models-can-use)). |
+| Tool not found / not loaded | File outside `tools.paths`, named with a leading `_`, or it failed to import. Check logs at `DEBUG`. |
+| `${VAR}` came out empty | The variable isn't set in `.env`, or it's lowercase (only `[A-Z0-9_]` expand). |
+| Tool changes don't apply | Discovery runs once at startup — restart the process. |
+| Telegram "Conflict: terminated by other getUpdates" | Two instances polling the same bot token. Stop one. |
+| Works in console, not Telegram | Token/allowlist/`adapter` setting — not your tools. Re-check `.env` and `config.yaml`. |
+
+Still stuck? The whole codebase is small — [`orchestrator.py`](../src/remotetoolbox/orchestrator.py)
+is under 100 lines and shows the full flow. Or point your coding agent at
+[CLAUDE.md](../CLAUDE.md) + [REFERENCE.md](REFERENCE.md) and describe the symptom.
