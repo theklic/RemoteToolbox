@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# RemoteToolbox runtime configuration
+#
+# Copy to `config.yaml` (gitignored) and edit. Non-secret settings live here;
+# secrets live in `.env`. Values like ${VAR} are read from the environment.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Which chat frontend to expose the agent through.
+#   console  -> chat in your terminal (great for local testing, no setup)
+#   telegram -> a Telegram bot (remote access; needs TELEGRAM_BOT_TOKEN)
+chat:
+  adapter: console
+  telegram:
+    # Token comes from the environment, never hardcode it here.
+    token: ${TELEGRAM_BOT_TOKEN}
+    # Comma-separated allowlist of Telegram user IDs (from env).
+    allowed_users: ${RTB_ALLOWED_USERS}
+
+# The local LLM backend. Today: ollama. The interface is pluggable
+# (see docs/ARCHITECTURE.md) so other backends can be added.
+llm:
+  backend: ollama
+  ollama:
+    host: ${OLLAMA_HOST}
+    model: llama3.1          # must support tool/function calling
+    # Sampling options passed through to Ollama (all optional).
+    options:
+      temperature: 0.4
+    # Max back-and-forth tool-calling rounds before the agent must answer.
+    max_tool_rounds: 6
+
+# The agent's behaviour.
+agent:
+  # System prompt prepended to every conversation. Keep it short and concrete.
+  system_prompt: >
+    You are RemoteToolbox, a helpful personal assistant running on the user's
+    own server. You can call local tools to get things done. Prefer using a
+    tool over guessing. Be concise.
+  # Conversation history kept per chat (number of messages). Older ones drop off.
+  history_limit: 20
+
+# Where your tools live. This directory is GITIGNORED — your tools are private.
+tools:
+  # One or more directories scanned recursively for @tool-decorated functions.
+  paths:
+    - ./tools
+  # Optional: connect to existing external MCP servers. See docs/WRITING_TOOLS.md.
+  # mcp_servers:
+  #   - name: filesystem
+  #     command: npx
+  #     args: ["-y", "@modelcontextprotocol/server-filesystem", "/srv/shared"]
+
+logging:
+  level: INFO     # DEBUG | INFO | WARNING | ERROR

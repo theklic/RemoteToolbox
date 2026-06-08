@@ -1,0 +1,129 @@
+"""Discover user tools from disk and bundle them into a :class:`Toolset`.
+
+Discovery rule: every ``*.py`` file under a configured tools directory is
+imported (excluding ``_``-prefixed files and ``__pycache__``). Importing the
+module runs the ``@tool`` decorators, which populate the global registry; we
+snapshot that registry after each scan.
+
+Tools are loaded by file path (not as installed packages) so users can just drop
+files into ``./tools`` without packaging anything.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import importlib.util
+import logging
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+from ..config import ToolsConfig
+from ..registry import REGISTRY, ToolSpec, clear_registry
+
+log = logging.getLogger(__name__)
+
+
+@dataclass
+class Toolset:
+    """The set of tools available to the agent, plus how to call them."""
+
+    specs: dict[str, ToolSpec] = field(default_factory=dict)
+    _mcp: Any = None  # optional MCPManager, lazily created
+
+    def ollama_tools(self) -> list[dict[str, Any]]:
+        return [spec.to_ollama_tool() for spec in self.specs.values()]
+
+    def names(self) -> list[str]:
+        return list(self.specs)
+
+    async def call(self, name: str, arguments: dict[str, Any]) -> str:
+        """Invoke a tool by name and return a string result for the model.
+
+        Errors are caught and returned as text so one failing tool can't crash
+        the agent — the model sees the error and can recover or apologise.
+        """
+        spec = self.specs.get(name)
+        if spec is None:
+            return f"Error: no tool named {name!r}. Available: {', '.join(self.specs) or 'none'}."
+        try:
+            if spec.is_async:
+                result = await spec.func(**arguments)
+            else:
+                # Run sync tools off the event loop so blocking I/O doesn't stall chat.
+                result = await asyncio.to_thread(spec.func, **arguments)
+            return _stringify(result)
+        except TypeError as exc:
+            return f"Error calling {name}: bad arguments ({exc})."
+        except Exception as exc:  # noqa: BLE001 - surface any tool error to the model
+            log.exception("Tool %s raised", name)
+            return f"Error: tool {name} failed: {exc}"
+
+    async def aclose(self) -> None:
+        if self._mcp is not None:
+            await self._mcp.aclose()
+
+
+def _stringify(result: Any) -> str:
+    if result is None:
+        return "Done."
+    if isinstance(result, str):
+        return result
+    try:
+        import json
+
+        return json.dumps(result, default=str, ensure_ascii=False)
+    except TypeError:
+        return str(result)
+
+
+def _import_file(path: Path) -> None:
+    """Import a standalone .py file so its @tool decorators run."""
+    module_name = f"rtb_tool_{path.stem}_{abs(hash(path)) & 0xFFFFFF:x}"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        log.warning("Could not create import spec for %s", path)
+        return
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+
+
+def _discover_dir(directory: Path) -> None:
+    if not directory.exists():
+        log.warning("Tools directory %s does not exist (skipping).", directory)
+        return
+    for path in sorted(directory.rglob("*.py")):
+        if path.name.startswith("_") or "__pycache__" in path.parts:
+            continue
+        try:
+            _import_file(path)
+            log.debug("Loaded tool module %s", path)
+        except Exception:  # noqa: BLE001
+            log.exception("Failed to import tool file %s (skipping)", path)
+
+
+async def load_tools(config: ToolsConfig) -> Toolset:
+    """Scan configured paths (and MCP servers) and return a ready Toolset."""
+    clear_registry()
+    for raw_path in config.paths:
+        _discover_dir(Path(raw_path).expanduser())
+
+    specs = dict(REGISTRY)  # snapshot
+    toolset = Toolset(specs=specs)
+
+    if config.mcp_servers:
+        from .mcp_client import MCPManager  # optional dependency
+
+        manager = MCPManager(config.mcp_servers)
+        mcp_specs = await manager.connect()
+        for spec in mcp_specs:
+            if spec.name in toolset.specs:
+                log.warning("MCP tool %r shadows a local tool; keeping local one.", spec.name)
+                continue
+            toolset.specs[spec.name] = spec
+        toolset._mcp = manager
+
+    log.info("Loaded %d tool(s): %s", len(toolset.specs), ", ".join(toolset.specs) or "(none)")
+    return toolset

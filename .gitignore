@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# RemoteToolbox .gitignore
+#
+# CORE PROJECT PROMISE: this repo is *framework + docs only*. Your actual tools
+# and every credential stay on your machine and NEVER get committed.
+#
+# If you add new locations for tools or secrets, add them here FIRST.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# --- Your tools live here and are private to you -----------------------------
+# Everything in /tools is ignored except the explanatory README and .gitkeep.
+/tools/*
+!/tools/README.md
+!/tools/.gitkeep
+
+# --- Secrets & credentials (never commit these) ------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+credentials/
+secrets/
+*.secret
+*_token*
+*.credentials
+service-account*.json
+# Your real runtime config (commit config.example.yaml instead).
+# NOTE: .gitignore does not support inline comments — keep these lines bare.
+config.yaml
+config.local.yaml
+config.*.local.yaml
+
+# --- Local LLM / model artifacts ---------------------------------------------
+models/
+*.gguf
+*.bin
+*.safetensors
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Runtime state -----------------------------------------------------------
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+.cache/
+.rtb_state/
+
+# --- Editor / OS -------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
