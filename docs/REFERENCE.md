@@ -132,8 +132,11 @@ Source: [`tooling/loader.py`](../src/remotetoolbox/tooling/loader.py). At startu
 
 1. Clears the registry (so reloads are clean).
 2. For each path in `tools.paths`, scans **recursively** for `*.py` files.
-3. **Skips** files whose name starts with `_` and anything under `__pycache__`.
-   Use `_helper.py` for shared code you don't want scanned.
+3. **Skips** files whose name starts with `_`, and anything inside a hidden
+   directory (`.git`, `.venv`, …) or a vendored one (`__pycache__`,
+   `node_modules`, `site-packages`, …). This lets a tools directory safely be its
+   own git repo or contain a virtualenv. Use `_helper.py` for shared code you
+   don't want scanned. See [MANAGING_TOOLS.md](MANAGING_TOOLS.md).
 4. Imports each remaining file as a standalone module (by file path — no
    packaging needed), which runs its `@tool` decorators.
 5. A file that fails to import is **logged and skipped** — it doesn't crash

@@ -1,0 +1,32 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .gitignore for YOUR tools repo.
+#
+# Secrets do NOT belong here — they live in the toolbox's .env and are read via
+# os.environ. Keeping this repo secret-free means you can safely push it to a
+# private remote for backup/history.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Secrets / credentials (just in case)
+.env
+.env.*
+*.key
+*.pem
+secrets/
+credentials/
+*.secret
+
+# Python caches & local virtualenvs
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

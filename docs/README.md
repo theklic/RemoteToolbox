@@ -47,6 +47,7 @@ Layer 3 with exact identifiers and error strings (so it's greppable).
 | Get it running on my machine | [README → Quickstart](../README.md#quickstart-about-10-minutes) |
 | Run it 24/7 / reach it from my phone | [Deployment](DEPLOYMENT.md) |
 | Build a tool | [Writing Tools](WRITING_TOOLS.md) |
+| Version / changelog / roll back my tools | [Managing Tools](MANAGING_TOOLS.md) |
 | Know every config option | [Configuration](CONFIGURATION.md) |
 | Know the exact API / contracts | [Reference](REFERENCE.md) |
 | Decode an error message | [Reference → Error & message reference](REFERENCE.md#error--message-reference) |
@@ -66,6 +67,7 @@ Layer 3 with exact identifiers and error strings (so it's greppable).
 | [Glossary](GLOSSARY.md) | 1 | Beginners |
 | [CLAUDE.md](../CLAUDE.md) | 1 | AI coding assistants (machine-facing) |
 | [Writing Tools](WRITING_TOOLS.md) | 2 | Tool makers |
+| [Managing Tools](MANAGING_TOOLS.md) | 2 | Tool makers — version history & rollback |
 | [Deployment](DEPLOYMENT.md) | 2 | Home-server / operators |
 | [Security](SECURITY.md) | 2 | Everyone |
 | [Chat Adapters](CHAT_ADAPTERS.md) | 2 | Developers |
