@@ -107,6 +107,10 @@ python -m venv .venv && source .venv/bin/activate    # makes an isolated workspa
 pip install -e .                                     # installs RemoteToolbox
 ```
 
+<sub>On **Windows (PowerShell)**, replace the activate line with
+`python -m venv .venv ; .venv\Scripts\Activate.ps1`. Run later commands from
+inside the `RemoteToolbox` folder so it finds your `config.yaml`.</sub>
+
 <sub>The `venv` line creates a private little sandbox so this project's pieces
 don't clash with anything else on your computer. See the
 [Glossary](docs/GLOSSARY.md#virtual-environment-venv).</sub>

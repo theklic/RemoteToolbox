@@ -45,14 +45,35 @@ class Orchestrator:
         await self.toolset.aclose()
 
     async def handle(self, chat_id: str, user_text: str) -> str:
-        """Process one user message and return the agent's text reply."""
+        """Process one user message and return the agent's text reply.
+
+        Operational failures (e.g. the LLM backend being unreachable) are caught
+        and returned as a readable message rather than raised, so a chat frontend
+        never crashes on a transient backend error.
+        """
         history = self._histories[chat_id]
         history.append(LLMMessage(role="user", content=user_text))
 
         messages = self._build_messages(history)
         tools = self.toolset.ollama_tools() or None
 
-        for round_num in range(self.max_tool_rounds + 1):
+        try:
+            return await self._run(chat_id, history, messages, tools)
+        except Exception as exc:  # noqa: BLE001 - surface backend errors as chat text
+            # One clean line by default; full traceback only when debugging.
+            log.error("chat=%s agent loop failed: %s", chat_id, exc)
+            log.debug("traceback for chat=%s", chat_id, exc_info=True)
+            self._trim(history)
+            return f"⚠️ {exc}"
+
+    async def _run(
+        self,
+        chat_id: str,
+        history: list[LLMMessage],
+        messages: list[LLMMessage],
+        tools: list[dict] | None,
+    ) -> str:
+        for _round in range(self.max_tool_rounds + 1):
             reply = await self.llm.chat(messages, tools=tools)
             messages.append(reply)
             history.append(reply)
