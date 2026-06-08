@@ -1,105 +1,156 @@
 <h1 align="center">🧰 RemoteToolbox</h1>
 
 <p align="center">
-  <em>Chat with your own tools, running on your own hardware, from anywhere.</em>
+  <em>Chat with your own tools, running on your own computer, from anywhere.</em>
 </p>
 
 <p align="center">
-  A self-hostable framework that bridges a chat app (Telegram, console, …) →
-  a <strong>local LLM</strong> on your home server → <strong>tools you build yourself</strong>.
+  Text a chat bot → it talks to a private AI on your home computer →
+  that AI runs <strong>little tools you made yourself</strong>.
 </p>
 
 ---
 
-## What is this?
+## What is this? (in plain English)
 
-RemoteToolbox lets you talk to a small AI agent over a chat app, where that
-agent runs **on your own machine** and can call **tools you wrote yourself**.
+Imagine texting a personal assistant that lives on *your* computer at home. You
+can ask it things like *"is the garage door open?"* or *"add milk to my shopping
+list"* — and it actually does them, because **you** gave it small tools for those
+jobs.
 
-Think of it as a tiny, personal, self-hosted version of a tool-using assistant:
+RemoteToolbox is the plumbing that makes that possible. It connects three things:
 
 ```
-  ┌────────────┐      ┌──────────────────────────────────────────┐
-  │  Telegram  │      │              your home server            │
-  │  (or any   │◄────►│                                          │
-  │   chat)    │      │   RemoteToolbox                          │
-  └────────────┘      │   ├─ chat adapter   (Telegram/console)   │
-       remote         │   ├─ orchestrator   (the agent loop)     │
-       access         │   ├─ local LLM      (Ollama)             │
-                      │   └─ YOUR TOOLS     (./tools, gitignored)│
-                      └──────────────────────────────────────────┘
+   📱 a chat app            🧠 a private AI               🔧 your tools
+   (Telegram, or your   →   (runs on your computer,   →   (small bits of code
+    terminal)               not in the cloud)             you wrote, e.g.
+                                                          "check the weather")
 ```
 
-You bring the tools. RemoteToolbox handles the chat plumbing, the LLM
-orchestration, the tool-calling loop, and the security boundaries — so adding a
-new capability is "drop a Python file in `tools/` and restart."
+You only have to write the **tools**. RemoteToolbox handles the chat, the AI, and
+wiring them together. Adding a new ability is basically: *drop a small file in a
+folder and restart.*
 
-### Why it exists
+> **New to these words?** AI, "model", "tool", "local", "MCP"… see the plain-language
+> [**Glossary**](docs/GLOSSARY.md). You don't need to understand all of it to start.
 
-- **Privacy first.** The model and your tools run locally. Nothing leaves your
-  network except the chat messages you choose to send.
-- **Your tools, your rules.** Tools are just small Python functions. Write them
-  by hand or vibe-code them with [Claude Code](https://claude.com/code).
-- **Nothing private in git.** This repo is **framework + docs only**. Your
-  actual tools and *all* credentials live in gitignored folders and never get
-  committed. See [`SECURITY.md`](docs/SECURITY.md).
-- **Small on purpose.** This is not a sprawling agent platform. It's for a
-  handful of personal tools you actually use. Like a much smaller, friendlier
-  cousin of the big agent frameworks.
+### Why people use it
+
+- 🔒 **Private.** The AI runs on your machine. Your tools and data don't go to a
+  company's cloud — only the chat messages you choose to send.
+- 🧰 **Yours.** Tools are tiny pieces of code. Write them yourself, or have an AI
+  assistant like [Claude Code](https://claude.com/code) write them *for* you.
+- 🙈 **Nothing private gets shared.** This project is just the *framework* — your
+  actual tools and passwords stay on your computer and are never uploaded. See
+  [Security](docs/SECURITY.md).
+- 🐣 **Small on purpose.** This is for a handful of personal tools you'll really
+  use — not a giant platform. Easy to understand, easy to tinker with.
 
 ---
 
-## Quickstart
+## Is this for you?
 
-> Full setup (home server, remote access, hardening) is in
-> [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). This is the 5-minute local version.
+This is a good fit if:
 
-**1. Install [Ollama](https://ollama.com) and pull a tool-capable model:**
+- ✅ You have **a computer that's usually on** (a spare laptop, a Raspberry Pi, a
+  home server, a desktop) to run things on.
+- ✅ You're OK **running a few commands in a terminal** — or you're happy to let an
+  AI assistant walk you through it.
+- ✅ You want a private assistant for **small, personal jobs**.
+
+You do **not** need to be an experienced programmer. If you can copy-paste
+commands and follow steps, you can run this. If you get stuck, the
+[Troubleshooting](docs/DEPLOYMENT.md#troubleshooting) section and an AI assistant
+can usually get you unstuck.
+
+---
+
+## What you'll need
+
+Three things. Don't worry — each links to a friendly install page.
+
+| Thing | What it is | Get it |
+|---|---|---|
+| **Python 3.10+** | The programming language this is written in. You install it once. | [python.org/downloads](https://www.python.org/downloads/) |
+| **Ollama** | A free app that runs an AI model *on your own computer* (no internet, no account). | [ollama.com](https://ollama.com) |
+| **A Telegram account** *(optional)* | Only if you want to chat from your phone. You can skip this at first and chat from your computer's terminal instead. | [telegram.org](https://telegram.org) |
+
+> 💡 **Not sure you can do this yourself?** Open this project in
+> [Claude Code](https://claude.com/code) and say *"help me set up RemoteToolbox."*
+> It can read [CLAUDE.md](CLAUDE.md) and do most of the work with you.
+
+---
+
+## Quickstart (about 10 minutes)
+
+We'll start the **simplest way**: chatting in your own terminal, no phone or
+accounts needed. You can add Telegram afterwards.
+
+### Step 1 — Get an AI model running
+
+After installing [Ollama](https://ollama.com), open a terminal and run:
 
 ```bash
-ollama pull llama3.1        # any model that supports tool calling
+ollama pull llama3.1
 ```
 
-**2. Clone and install RemoteToolbox:**
+This downloads a free AI model to your computer. (`llama3.1` is a solid starter
+model that knows how to use tools. Others work too — see the
+[Glossary](docs/GLOSSARY.md#model).)
+
+### Step 2 — Download RemoteToolbox and set it up
 
 ```bash
 git clone https://github.com/theklic/RemoteToolbox.git
 cd RemoteToolbox
-python -m venv .venv && source .venv/bin/activate
-pip install -e .
+python -m venv .venv && source .venv/bin/activate    # makes an isolated workspace
+pip install -e .                                     # installs RemoteToolbox
 ```
 
-**3. Add your first tool** (copy an example into the gitignored `tools/` dir):
+<sub>The `venv` line creates a private little sandbox so this project's pieces
+don't clash with anything else on your computer. See the
+[Glossary](docs/GLOSSARY.md#virtual-environment-venv).</sub>
+
+### Step 3 — Give it its first tool
+
+Tools live in a folder called `tools/`. Copy in the bundled "hello" example:
 
 ```bash
 cp -r examples/tools/hello tools/hello
 ```
 
-**4. Configure and run — start with the console adapter (no Telegram needed):**
+### Step 4 — Create your settings files and run it
 
 ```bash
-cp .env.example .env
-cp config.example.yaml config.yaml
-python -m remotetoolbox            # uses chat.adapter: console by default
+cp .env.example .env                 # for secret stuff (passwords, tokens)
+cp config.example.yaml config.yaml   # for normal settings
+python -m remotetoolbox              # start it! (chats in your terminal)
 ```
 
-Now chat in your terminal:
+Now try chatting:
 
 ```
 you ›  say hello to Sam
 bot ›  Hello, Sam! 👋
 ```
 
-**5. Go remote with Telegram** — create a bot via [@BotFather](https://t.me/BotFather),
-put the token in `.env`, set `chat.adapter: telegram` in `config.yaml`, and rerun.
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+🎉 That's a working AI agent calling a tool you control. **Type `/quit` to exit.**
+
+### Step 5 — (Optional) Chat from your phone with Telegram
+
+Once the terminal version works, you can reach it from anywhere via a Telegram
+bot. It takes about 5 more minutes (make a bot, paste in a token, flip one
+setting). The step-by-step is in
+[**docs/DEPLOYMENT.md**](docs/DEPLOYMENT.md#5-create-the-telegram-bot).
+
+> **Hit a snag in any step?** See [Troubleshooting](docs/DEPLOYMENT.md#troubleshooting).
 
 ---
 
-## Writing a tool (the whole point)
+## Making your own tool
 
-A tool is a plain Python function with a decorator. Drop it anywhere under
-`tools/` and RemoteToolbox auto-discovers it on startup.
+A tool is just a small Python function with one special line (`@tool`) above it.
+Drop the file in `tools/`, restart, and the AI can use it.
 
 ```python
 # tools/weather/tool.py
@@ -107,52 +158,56 @@ from remotetoolbox import tool
 
 @tool(description="Get the current weather for a city.")
 def get_weather(city: str) -> str:
-    # ... call your weather API, read a sensor, whatever ...
+    # ...your code: call a weather website, read a sensor, whatever...
     return f"It's 21°C and sunny in {city}."
 ```
 
-That's it. Restart and ask the bot "what's the weather in Oslo?" — the LLM will
-call `get_weather("Oslo")` and reply with the result.
+Restart and ask *"what's the weather in Oslo?"* — the AI figures out it should
+call `get_weather("Oslo")` and tells you the answer.
 
-The decorator turns your type hints + docstring into the JSON schema the LLM
-needs. Full guide, including secrets, async tools, and connecting existing MCP
-servers: **[`docs/WRITING_TOOLS.md`](docs/WRITING_TOOLS.md)**.
+👉 The full, friendly guide (passwords, more examples, do's and don'ts) is
+[**docs/WRITING_TOOLS.md**](docs/WRITING_TOOLS.md). **Start here to build things.**
 
 ---
 
-## Vibe-coding with Claude Code
+## Don't want to write code? Let an AI do it
 
-This repo is built to be extended by AI coding assistants. [`CLAUDE.md`](CLAUDE.md)
-gives Claude Code (or any agent) the project conventions so you can say:
+This project is deliberately set up so an AI coding assistant can build tools for
+you. Open the folder in [Claude Code](https://claude.com/code) and just describe
+what you want:
 
-> "Add a tool that turns my living-room lights off via the Hue API."
+> *"Add a tool that turns my living-room lights off using the Philips Hue API."*
 
-…and get a correct, idiomatic tool in `tools/`. The framework's contracts are
-small and documented precisely so an agent can plug in without reading the whole
-codebase.
+It reads [CLAUDE.md](CLAUDE.md) (a guide written for AI assistants), follows the
+project's conventions, and drops a working tool into `tools/`. You review it and
+restart. That's the "vibe-coding" workflow this project is built around.
 
 ---
 
 ## Documentation
 
-| Doc | What's in it |
-|-----|--------------|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | How the pieces fit; the agent loop; extension points. |
-| [`docs/WRITING_TOOLS.md`](docs/WRITING_TOOLS.md) | The tool authoring guide (start here to build things). |
-| [`docs/CHAT_ADAPTERS.md`](docs/CHAT_ADAPTERS.md) | Add a new chat frontend (Discord, Matrix, …). |
-| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Home-server setup, remote access, running as a service. |
-| [`docs/SECURITY.md`](docs/SECURITY.md) | Credentials, the gitignore promise, exposure & access control. |
-| [`CLAUDE.md`](CLAUDE.md) | Conventions for extending the project with an AI assistant. |
+Docs are split by **who they're for**. Start with whichever matches you:
+
+| Doc | Who it's for | What's in it |
+|-----|--------------|--------------|
+| [Glossary](docs/GLOSSARY.md) | 🐣 **Beginners** | Plain-English definitions of every term (AI, model, tool, MCP…). |
+| [Writing Tools](docs/WRITING_TOOLS.md) | 🔧 **Tool makers** | How to build tools. The main "how do I add stuff" guide. |
+| [Deployment](docs/DEPLOYMENT.md) | 🏠 **Home-server setup** | Full install, Telegram, running it 24/7, troubleshooting. |
+| [Security](docs/SECURITY.md) | 🔒 **Everyone** | Keeping passwords safe and controlling who can use your bot. |
+| [Architecture](docs/ARCHITECTURE.md) | 🛠️ **Developers** | How the internals fit together. |
+| [Chat Adapters](docs/CHAT_ADAPTERS.md) | 🛠️ **Developers** | Add a new chat app (Discord, Matrix, …). |
+| [CLAUDE.md](CLAUDE.md) | 🤖 **AI assistants** | Conventions for AI tools extending this project (machine-facing). |
 
 ---
 
 ## Project status
 
-Early framework scaffold. The contracts (tool decorator, LLM backend interface,
-chat adapter interface) are the stable surface; everything else is meant to be
-forked and tinkered with. Contributions to the **framework and docs** are
-welcome — but remember tools themselves are never committed here.
+Early but working framework. The core pieces (how you write a tool, the AI
+connection, the chat connection) are stable; the rest is meant to be forked and
+tinkered with. Contributions to the **framework and docs** are welcome — just
+remember that **tools themselves are never committed here**, they live on your
+own machine.
 
 ## License
 
-[MIT](LICENSE).
+[MIT](LICENSE) — free to use, change, and share.
