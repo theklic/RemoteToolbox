@@ -300,8 +300,17 @@ class ChatAdapter(ABC):
 | `load_tools(tools_config)` | `tooling/__init__.py` | Discover tools → `Toolset` (async). |
 | `main()` | `__main__.py` | CLI entry: parse args, load config, set up logging, build adapter, `serve()`. |
 
-CLI: `python -m remotetoolbox [-c/--config PATH] [--env PATH]` (or the
-`remotetoolbox` console script).
+CLI:
+
+| Invocation | Does |
+|---|---|
+| `python -m remotetoolbox [-c PATH] [--env PATH]` | Run the chat agent (default). |
+| `python -m remotetoolbox init-tools <path> [--no-git]` | Scaffold a personal tools repo from `examples/tools-repo` (copy + `git init` + first commit). See [MANAGING_TOOLS.md](MANAGING_TOOLS.md). `--no-git` copies files only. |
+
+(`remotetoolbox` is also installed as a console script equivalent to
+`python -m remotetoolbox`.) `init-tools` is implemented in
+[`scaffold.py`](../src/remotetoolbox/scaffold.py); it refuses to write into a
+non-empty directory and never fails the scaffold if the git commit can't be made.
 
 ---
 

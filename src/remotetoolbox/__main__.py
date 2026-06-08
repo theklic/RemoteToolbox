@@ -44,12 +44,45 @@ def _make_assembler(config: Config):
     return assemble
 
 
+def _cmd_init_tools(path: str, no_git: bool) -> None:
+    from .scaffold import init_tools
+
+    try:
+        dest = init_tools(path, do_git=not no_git)
+    except (FileExistsError, FileNotFoundError) as exc:
+        raise SystemExit(f"init-tools: {exc}")
+
+    print("\nNext steps:")
+    print(f"  1. Add tools under {dest}/  (see docs/WRITING_TOOLS.md)")
+    print("  2. Point RemoteToolbox at it in config.yaml:")
+    print("       tools:")
+    print("         paths:")
+    print(f"           - {path}")
+    print("  3. Restart RemoteToolbox.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="remotetoolbox", description=__doc__)
     parser.add_argument("-c", "--config", help="Path to config.yaml", default=None)
     parser.add_argument("--env", help="Path to .env file", default=None)
+
+    sub = parser.add_subparsers(dest="command")
+    p_init = sub.add_parser(
+        "init-tools",
+        help="Scaffold a personal tools repo (version history + changelog).",
+    )
+    p_init.add_argument("path", help="Where to create the tools repo, e.g. ~/rtb-tools")
+    p_init.add_argument(
+        "--no-git", action="store_true", help="Copy files only; don't run git init/commit."
+    )
+
     args = parser.parse_args()
 
+    if args.command == "init-tools":
+        _cmd_init_tools(args.path, args.no_git)
+        return
+
+    # Default (no subcommand): run the chat agent.
     config = load_config(args.config, args.env)
     _setup_logging(config.logging.level)
     log = logging.getLogger("remotetoolbox")

@@ -8,6 +8,15 @@ a git repo that is **completely separate** from the RemoteToolbox framework repo
 
 ## Use it
 
+The easiest way is the bundled command, which copies this template and runs
+`git init` + first commit for you:
+
+```bash
+python -m remotetoolbox init-tools ~/rtb-tools
+```
+
+Or do it by hand:
+
 ```bash
 # 1. Copy this template somewhere outside the toolbox repo
 cp -r /path/to/RemoteToolbox/examples/tools-repo ~/rtb-tools
@@ -15,11 +24,14 @@ cd ~/rtb-tools
 
 # 2. Make it its own git repo
 git init && git add -A && git commit -m "My tools: initial commit"
+```
 
-# 3. Tell RemoteToolbox where they are: in the toolbox's config.yaml
-#    tools:
-#      paths:
-#        - ~/rtb-tools
+Then tell RemoteToolbox where they are, in the toolbox's `config.yaml`:
+
+```yaml
+tools:
+  paths:
+    - ~/rtb-tools
 ```
 
 Restart RemoteToolbox and your tools load from here. Now every change to a tool

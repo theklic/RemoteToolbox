@@ -23,14 +23,16 @@ framework.
 ### A) A separate tools repo — recommended
 
 Keep your tools in their own directory anywhere on disk, as its own repo, and
-point the toolbox at it.
+point the toolbox at it. One command scaffolds it (copies a `.gitignore`,
+`CHANGELOG.md`, and a starter tool, then runs `git init` + first commit):
 
 ```bash
-# Bootstrap from the template (copies a .gitignore + CHANGELOG + a starter tool)
-cp -r RemoteToolbox/examples/tools-repo ~/rtb-tools
-cd ~/rtb-tools
-git init && git add -A && git commit -m "My tools: initial commit"
+python -m remotetoolbox init-tools ~/rtb-tools
 ```
+
+<sub>Prefer to do it by hand? `cp -r RemoteToolbox/examples/tools-repo ~/rtb-tools
+&& cd ~/rtb-tools && git init && git add -A && git commit -m "initial"`. Use
+`--no-git` to skip the repo init.</sub>
 
 Then tell the toolbox where they are, in `config.yaml`:
 
