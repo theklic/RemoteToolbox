@@ -30,8 +30,11 @@ service-account*.json
 # Your real runtime config (commit config.example.yaml instead).
 # NOTE: .gitignore does not support inline comments — keep these lines bare.
 config.yaml
+config.yml
 config.local.yaml
+config.local.yml
 config.*.local.yaml
+config.*.local.yml
 
 # --- Local LLM / model artifacts ---------------------------------------------
 models/

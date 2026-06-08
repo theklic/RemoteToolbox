@@ -200,7 +200,13 @@ class LLMBackend(ABC):
 - `chat()` returns the assistant's next message, which **may contain
   `tool_calls`**. `tools` are OpenAI/Ollama-format specs (or `None` when no tools
   are available, or on the forced final round).
-- Register a new backend in `llm/__init__.py:build_backend`.
+- **Register** a new backend in two places (same pattern as a chat adapter):
+  1. add a branch to `llm/__init__.py:build_backend` returning your class;
+  2. add a settings sub-block to `LLMConfig` in
+     [`config.py`](../src/remotetoolbox/config.py) (e.g. an `openai: OpenAIConfig`
+     field) so your `config.yaml` block is parsed. **A config block with no
+     matching model field is silently ignored**, so this step is required for
+     your backend to read its settings.
 
 The shipped **Ollama** backend ([`llm/ollama.py`](../src/remotetoolbox/llm/ollama.py))
 posts to `POST {host}/api/chat` with `stream=false`, translates to/from the wire
@@ -216,6 +222,8 @@ Source: [`llm/base.py`](../src/remotetoolbox/llm/base.py). The normalized messag
 types the orchestrator speaks (backends translate to/from their wire format).
 
 ```python
+from dataclasses import dataclass, field
+
 @dataclass
 class ToolCall:
     id: str
@@ -226,7 +234,7 @@ class ToolCall:
 class LLMMessage:
     role: str                 # "system" | "user" | "assistant" | "tool"
     content: str = ""
-    tool_calls: list[ToolCall] = []
+    tool_calls: list[ToolCall] = field(default_factory=list)
     name: str | None = None   # tool name, when role == "tool"
 ```
 
@@ -234,8 +242,33 @@ class LLMMessage:
 
 ## The orchestrator loop
 
-Source: [`orchestrator.py`](../src/remotetoolbox/orchestrator.py). One public
-method drives everything:
+Source: [`orchestrator.py`](../src/remotetoolbox/orchestrator.py).
+
+**Constructor** (you build one in an adapter's `assemble` factory, or when
+testing a backend directly):
+
+```python
+Orchestrator(
+    llm,            # an LLMBackend
+    toolset,        # a Toolset (from load_tools)
+    agent_config,   # config.agent (AgentConfig: system_prompt, history_limit)
+    llm_runtime,    # config.llm.ollama (OllamaConfig) — supplies max_tool_rounds
+)
+```
+
+> Note the parameter is `llm` (not `backend`), and `max_tool_rounds` currently
+> lives on `OllamaConfig`, so even a non-Ollama backend is handed an
+> `OllamaConfig` for the round budget. A minimal `assemble` factory (mirroring
+> [`__main__.py`](../src/remotetoolbox/__main__.py)):
+>
+> ```python
+> async def assemble() -> Orchestrator:
+>     toolset = await load_tools(config.tools)
+>     llm = MyBackend(...)
+>     return Orchestrator(llm, toolset, config.agent, config.llm.ollama)
+> ```
+
+One public method drives everything:
 
 ```python
 async def handle(chat_id: str, user_text: str) -> str

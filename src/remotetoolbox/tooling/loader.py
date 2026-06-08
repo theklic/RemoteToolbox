@@ -81,8 +81,10 @@ def _stringify(result: Any) -> str:
 def _import_file(path: Path) -> None:
     """Import a standalone .py file so its @tool decorators run.
 
-    The file's own directory is put on ``sys.path`` so a tool can import a
-    sibling private helper (e.g. ``from _client import ...``). Helper module
+    The file's own directory is **appended** to ``sys.path`` so a tool can import
+    a sibling private helper (e.g. ``from _client import ...``). We append rather
+    than prepend so a tool-directory file can't shadow a stdlib / site-packages
+    module of the same name (e.g. a ``secrets.py`` next to a tool). Helper module
     names are resolved by bare name and cached globally, so keep them unique
     across tool folders (prefix them, e.g. ``_weather_client.py``).
     """
@@ -96,7 +98,7 @@ def _import_file(path: Path) -> None:
 
     parent = str(path.parent)
     if parent not in sys.path:
-        sys.path.insert(0, parent)
+        sys.path.append(parent)
 
     spec.loader.exec_module(module)
 

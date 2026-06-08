@@ -84,7 +84,10 @@ class Orchestrator:
 
             # The model wants to call tools. Run them, feed results back, loop.
             for call in reply.tool_calls:
-                log.info("chat=%s calling tool %s(%s)", chat_id, call.name, call.arguments)
+                # Log argument NAMES at INFO; full values only at DEBUG, so a
+                # secret passed as a tool argument isn't logged by default.
+                log.info("chat=%s calling tool %s(%s)", chat_id, call.name, ", ".join(call.arguments))
+                log.debug("chat=%s tool %s args=%r", chat_id, call.name, call.arguments)
                 result = await self.toolset.call(call.name, call.arguments)
                 tool_msg = LLMMessage(role="tool", content=result, name=call.name)
                 messages.append(tool_msg)
