@@ -73,7 +73,13 @@ Layer 3 with exact identifiers and error strings (so it's greppable).
 | [Reference](REFERENCE.md) | 3 | Tool makers, developers, agents |
 | [Architecture](ARCHITECTURE.md) | 3 | Developers |
 
-> **Keeping docs honest:** the Layer 3 reference docs mirror the code in
-> [`src/remotetoolbox/`](../src/remotetoolbox/). When you change a contract,
-> default, or error message, update [REFERENCE.md](REFERENCE.md) /
-> [CONFIGURATION.md](CONFIGURATION.md) in the same commit.
+> **Keeping docs honest (enforced):** the Layer 3 reference docs mirror the code
+> in [`src/remotetoolbox/`](../src/remotetoolbox/). This isn't just a convention —
+> [`tests/test_docs_sync.py`](../tests/test_docs_sync.py) fails CI if:
+> - a config field in `config.py` isn't documented in
+>   [CONFIGURATION.md](CONFIGURATION.md) (key **and** default), or
+> - any internal doc link or `#anchor` doesn't resolve.
+>
+> So when you change a contract, default, or error message, update
+> [REFERENCE.md](REFERENCE.md) / [CONFIGURATION.md](CONFIGURATION.md) in the same
+> commit, or `pytest` will tell you which one you missed.

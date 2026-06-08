@@ -93,12 +93,24 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
 
 ```bash
 pip install -e ".[dev]"        # add ,telegram and/or ,mcp as needed
-pytest                          # unit tests (registry/schema are covered)
+pytest                          # unit tests + docs-sync guards
 python -m remotetoolbox         # console adapter, no tokens needed — fastest loop
 ```
 
 When you change framework code, add/extend a test in `tests/`. The schema
 generator and registry are the highest-value things to keep covered.
+
+**Docs stay in sync automatically.** [`tests/test_docs_sync.py`](tests/test_docs_sync.py)
+(run in CI via [`.github/workflows/ci.yml`](.github/workflows/ci.yml)) fails if:
+- you add/rename/remove a config field without updating
+  [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) (it checks the key **and** its
+  default value), or
+- any internal doc link / `#anchor` breaks (e.g. you rename a heading).
+
+So if you touch `config.py`, contracts, or headings, expect to update the docs in
+the **same change** — `pytest` will name exactly what's out of sync. The example
+tools are also load-tested ([`tests/test_examples.py`](tests/test_examples.py)),
+so keep them working when you change the `@tool` API.
 
 ## Git rules (important)
 
