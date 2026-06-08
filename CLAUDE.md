@@ -42,6 +42,11 @@ This is what most users will ask. Do exactly this:
 Full details: [`docs/WRITING_TOOLS.md`](docs/WRITING_TOOLS.md). Copyable
 examples: [`examples/tools/`](examples/tools/).
 
+**If the user versions their tools** (there's a `CHANGELOG.md` in the tools
+directory, or `tools.paths` points at a separate repo), add a dated entry to that
+`CHANGELOG.md` describing what you added/changed, and commit it to the **user's
+tools repo — never this one**. See [`docs/MANAGING_TOOLS.md`](docs/MANAGING_TOOLS.md).
+
 ### Do NOT, when adding a tool:
 
 - Don't commit anything under `tools/` or any secret — see "Git rules" below.

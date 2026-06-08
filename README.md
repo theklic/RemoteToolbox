@@ -196,6 +196,7 @@ The **[Documentation index](docs/README.md)** explains the layering and has a
 | [Docs index](docs/README.md) | — | **Everyone** | Map of all docs + reading paths by goal. |
 | [Glossary](docs/GLOSSARY.md) | Get going | 🐣 **Beginners** | Plain-English definitions of every term (AI, model, tool, MCP…). |
 | [Writing Tools](docs/WRITING_TOOLS.md) | Guide | 🔧 **Tool makers** | How to build tools. The main "how do I add stuff" guide. |
+| [Managing Tools](docs/MANAGING_TOOLS.md) | Guide | 🔧 **Tool makers** | Version your tools in their own git repo — history, changelog, rollback. |
 | [Deployment](docs/DEPLOYMENT.md) | Guide | 🏠 **Home-server setup** | Full install, Telegram, running it 24/7, troubleshooting. |
 | [Security](docs/SECURITY.md) | Guide | 🔒 **Everyone** | Keeping passwords safe and controlling who can use your bot. |
 | [Configuration](docs/CONFIGURATION.md) | Reference | ⚙️ **Operators / agents** | Every `config.yaml` key and env var, with types & defaults. |

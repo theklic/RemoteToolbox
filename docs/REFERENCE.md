@@ -132,8 +132,11 @@ Source: [`tooling/loader.py`](../src/remotetoolbox/tooling/loader.py). At startu
 
 1. Clears the registry (so reloads are clean).
 2. For each path in `tools.paths`, scans **recursively** for `*.py` files.
-3. **Skips** files whose name starts with `_` and anything under `__pycache__`.
-   Use `_helper.py` for shared code you don't want scanned.
+3. **Skips** files whose name starts with `_`, and anything inside a hidden
+   directory (`.git`, `.venv`, …) or a vendored one (`__pycache__`,
+   `node_modules`, `site-packages`, …). This lets a tools directory safely be its
+   own git repo or contain a virtualenv. Use `_helper.py` for shared code you
+   don't want scanned. See [MANAGING_TOOLS.md](MANAGING_TOOLS.md).
 4. Imports each remaining file as a standalone module (by file path — no
    packaging needed), which runs its `@tool` decorators.
 5. A file that fails to import is **logged and skipped** — it doesn't crash
@@ -297,8 +300,17 @@ class ChatAdapter(ABC):
 | `load_tools(tools_config)` | `tooling/__init__.py` | Discover tools → `Toolset` (async). |
 | `main()` | `__main__.py` | CLI entry: parse args, load config, set up logging, build adapter, `serve()`. |
 
-CLI: `python -m remotetoolbox [-c/--config PATH] [--env PATH]` (or the
-`remotetoolbox` console script).
+CLI:
+
+| Invocation | Does |
+|---|---|
+| `python -m remotetoolbox [-c PATH] [--env PATH]` | Run the chat agent (default). |
+| `python -m remotetoolbox init-tools <path> [--no-git]` | Scaffold a personal tools repo from `examples/tools-repo` (copy + `git init` + first commit). See [MANAGING_TOOLS.md](MANAGING_TOOLS.md). `--no-git` copies files only. |
+
+(`remotetoolbox` is also installed as a console script equivalent to
+`python -m remotetoolbox`.) `init-tools` is implemented in
+[`scaffold.py`](../src/remotetoolbox/scaffold.py); it refuses to write into a
+non-empty directory and never fails the scaffold if the git commit can't be made.
 
 ---
 

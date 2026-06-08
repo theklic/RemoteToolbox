@@ -90,12 +90,40 @@ def _import_file(path: Path) -> None:
     spec.loader.exec_module(module)
 
 
+# Directories whose contents are never tool files. Skipping these lets a tools
+# directory safely be its own git repo (or contain a virtualenv / vendored deps)
+# without the loader trying to import their internals.
+_SKIP_DIRS = frozenset(
+    {
+        "__pycache__",
+        "node_modules",
+        ".git",
+        ".venv",
+        "venv",
+        "env",
+        ".mypy_cache",
+        ".ruff_cache",
+        ".pytest_cache",
+        ".tox",
+        "site-packages",
+    }
+)
+
+
+def _skipped(rel: Path) -> bool:
+    """True if a discovered file should be ignored: a private (``_``-prefixed)
+    file, or anything inside a hidden (``.git``, ``.venv``, …) or vendored dir."""
+    if rel.name.startswith("_"):
+        return True
+    return any(part.startswith(".") or part in _SKIP_DIRS for part in rel.parts[:-1])
+
+
 def _discover_dir(directory: Path) -> None:
     if not directory.exists():
         log.warning("Tools directory %s does not exist (skipping).", directory)
         return
     for path in sorted(directory.rglob("*.py")):
-        if path.name.startswith("_") or "__pycache__" in path.parts:
+        if _skipped(path.relative_to(directory)):
             continue
         try:
             _import_file(path)

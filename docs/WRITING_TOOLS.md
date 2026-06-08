@@ -4,7 +4,9 @@ This is the guide you'll spend the most time in. A "tool" is a Python function
 the agent can call. You write it, drop it in `./tools`, restart, and chat to it.
 
 > Everything under `./tools` is **gitignored**. Your tools and their secrets stay
-> on your machine. See [SECURITY.md](SECURITY.md).
+> on your machine. See [SECURITY.md](SECURITY.md). To keep version history and a
+> changelog for your tools (in their own git repo), see
+> [MANAGING_TOOLS.md](MANAGING_TOOLS.md).
 
 ## The shape of a tool
 

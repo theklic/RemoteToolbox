@@ -33,4 +33,16 @@ cp -r ../examples/tools/hello ./hello
 - Read secrets from the environment (`os.environ`), never hardcode them here.
 - Files/dirs starting with `_` are skipped by the loader (handy for helpers).
 
-Full guide: [`../docs/WRITING_TOOLS.md`](../docs/WRITING_TOOLS.md).
+## Keep a version history of your tools
+
+Because this folder is ignored by the toolbox repo, you can make it (or a
+separate folder you point `tools.paths` at) **its own git repo** — giving you
+history, a changelog, and rollback when you break something. The recommended
+setup keeps your tools in a separate repo entirely.
+
+→ [`../docs/MANAGING_TOOLS.md`](../docs/MANAGING_TOOLS.md), with a copyable
+starter at [`../examples/tools-repo/`](../examples/tools-repo/).
+
+---
+
+Writing guide: [`../docs/WRITING_TOOLS.md`](../docs/WRITING_TOOLS.md).
