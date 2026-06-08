@@ -7,7 +7,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from remotetoolbox.config import AgentConfig, OllamaConfig
+from remotetoolbox.config import AgentConfig
 from remotetoolbox.llm.base import LLMBackend, LLMMessage, ToolCall
 from remotetoolbox.orchestrator import Orchestrator
 from remotetoolbox.registry import ToolSpec
@@ -28,7 +28,7 @@ class _PlainBackend(LLMBackend):
 
 
 def _orch(backend: LLMBackend) -> Orchestrator:
-    return Orchestrator(backend, Toolset(), AgentConfig(), OllamaConfig())
+    return Orchestrator(backend, Toolset(), AgentConfig())
 
 
 def test_backend_error_returned_as_text_not_raised() -> None:
@@ -70,7 +70,7 @@ def test_tool_argument_values_are_not_logged_at_info(caplog) -> None:
         parameters={"type": "object", "properties": {"api_token": {"type": "string"}}},
         func=login,
     )
-    orch = Orchestrator(_CallThenAnswer(), Toolset(specs={"login": spec}), AgentConfig(), OllamaConfig())
+    orch = Orchestrator(_CallThenAnswer(), Toolset(specs={"login": spec}), AgentConfig())
 
     with caplog.at_level(logging.INFO, logger="remotetoolbox.orchestrator"):
         asyncio.run(orch.handle("c1", "log me in"))

@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 
-from .config import AgentConfig, OllamaConfig
+from .config import AgentConfig
 from .llm.base import LLMBackend, LLMMessage
 from .tooling import Toolset
 
@@ -27,12 +27,11 @@ class Orchestrator:
         llm: LLMBackend,
         toolset: Toolset,
         agent_config: AgentConfig,
-        llm_runtime: OllamaConfig,
     ) -> None:
         self.llm = llm
         self.toolset = toolset
         self.agent = agent_config
-        self.max_tool_rounds = llm_runtime.max_tool_rounds
+        self.max_tool_rounds = agent_config.max_tool_rounds
         self._histories: dict[str, list[LLMMessage]] = defaultdict(list)
 
     def reset(self, chat_id: str) -> None:

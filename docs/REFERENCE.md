@@ -249,23 +249,21 @@ testing a backend directly):
 
 ```python
 Orchestrator(
-    llm,            # an LLMBackend
+    llm,            # an LLMBackend (the parameter is `llm`, not `backend`)
     toolset,        # a Toolset (from load_tools)
-    agent_config,   # config.agent (AgentConfig: system_prompt, history_limit)
-    llm_runtime,    # config.llm.ollama (OllamaConfig) — supplies max_tool_rounds
+    agent_config,   # config.agent (AgentConfig: system_prompt, history_limit,
+                    #               max_tool_rounds) — backend-neutral
 )
 ```
 
-> Note the parameter is `llm` (not `backend`), and `max_tool_rounds` currently
-> lives on `OllamaConfig`, so even a non-Ollama backend is handed an
-> `OllamaConfig` for the round budget. A minimal `assemble` factory (mirroring
+> A minimal `assemble` factory (mirroring
 > [`__main__.py`](../src/remotetoolbox/__main__.py)):
 >
 > ```python
 > async def assemble() -> Orchestrator:
 >     toolset = await load_tools(config.tools)
 >     llm = MyBackend(...)
->     return Orchestrator(llm, toolset, config.agent, config.llm.ollama)
+>     return Orchestrator(llm, toolset, config.agent)
 > ```
 
 One public method drives everything:

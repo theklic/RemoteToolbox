@@ -26,8 +26,6 @@ llm:
     # Sampling options passed through to Ollama (all optional).
     options:
       temperature: 0.4
-    # Max back-and-forth tool-calling rounds before the agent must answer.
-    max_tool_rounds: 6
 
 # The agent's behaviour.
 agent:
@@ -38,6 +36,9 @@ agent:
     tool over guessing. Be concise.
   # Conversation history kept per chat (number of messages). Older ones drop off.
   history_limit: 20
+  # Max back-and-forth tool-calling rounds before the agent must answer.
+  # Backend-neutral (applies to any LLM backend).
+  max_tool_rounds: 6
 
 # Where your tools live. This directory is GITIGNORED — your tools are private.
 tools:

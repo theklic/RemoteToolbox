@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 try:
     from dotenv import load_dotenv
@@ -28,7 +28,15 @@ _ENV_PATTERN = re.compile(r"\$\{([A-Z0-9_]+)\}")
 # --- Typed config models -----------------------------------------------------
 
 
-class TelegramConfig(BaseModel):
+class _Strict(BaseModel):
+    """Base for all config models. Rejects unknown keys so a typo'd or misplaced
+    block (e.g. an `openai:` block put in the wrong place) errors loudly instead
+    of being silently ignored."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class TelegramConfig(_Strict):
     token: str = ""
     allowed_users: str = ""  # comma-separated user IDs
 
@@ -37,45 +45,47 @@ class TelegramConfig(BaseModel):
         return {int(x) for x in self.allowed_users.split(",") if x.strip().isdigit()}
 
 
-class ChatConfig(BaseModel):
+class ChatConfig(_Strict):
     adapter: str = "console"
     telegram: TelegramConfig = Field(default_factory=TelegramConfig)
 
 
-class OllamaConfig(BaseModel):
+class OllamaConfig(_Strict):
     host: str = "http://localhost:11434"
     model: str = "llama3.1"
     options: dict[str, Any] = Field(default_factory=dict)
-    max_tool_rounds: int = 6
 
 
-class LLMConfig(BaseModel):
+class LLMConfig(_Strict):
     backend: str = "ollama"
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
 
 
-class AgentConfig(BaseModel):
+class AgentConfig(_Strict):
     system_prompt: str = "You are RemoteToolbox, a helpful self-hosted assistant."
     history_limit: int = 20
+    # Max tool-call -> result -> model rounds per user message before a forced
+    # final answer. Backend-neutral (lives here, not on a specific LLM config).
+    max_tool_rounds: int = 6
 
 
-class MCPServerConfig(BaseModel):
+class MCPServerConfig(_Strict):
     name: str
     command: str
     args: list[str] = Field(default_factory=list)
     env: dict[str, str] = Field(default_factory=dict)
 
 
-class ToolsConfig(BaseModel):
+class ToolsConfig(_Strict):
     paths: list[str] = Field(default_factory=lambda: ["./tools"])
     mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
 
 
-class LoggingConfig(BaseModel):
+class LoggingConfig(_Strict):
     level: str = "INFO"
 
 
-class Config(BaseModel):
+class Config(_Strict):
     chat: ChatConfig = Field(default_factory=ChatConfig)
     llm: LLMConfig = Field(default_factory=LLMConfig)
     agent: AgentConfig = Field(default_factory=AgentConfig)

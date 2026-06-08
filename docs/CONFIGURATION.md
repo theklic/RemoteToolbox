@@ -18,6 +18,11 @@ There are **two** sources, by design:
 expanded from the environment (which `.env` populates) at load time. This is how
 secrets reach the config without ever being written into `config.yaml`.
 
+> **Unknown keys are rejected.** Config models are strict (`extra="forbid"`), so a
+> typo'd or misplaced key (e.g. a backend block under the wrong parent) raises a
+> validation error at startup instead of being silently ignored. Put each key
+> under the right section (see the tables below).
+
 ```yaml
 chat:
   telegram:
@@ -75,7 +80,6 @@ default shown.
 | `llm.ollama.host` | string | `http://localhost:11434` | Base URL of the Ollama server. Use `${OLLAMA_HOST}`. |
 | `llm.ollama.model` | string | `llama3.1` | Model name. **Must support tool calling** (e.g. `llama3.1`, `qwen2.5`, `mistral-nemo`). |
 | `llm.ollama.options` | map | `{}` | Passed straight to Ollama's `options` (e.g. `temperature`, `num_ctx`, `top_p`). See Ollama docs. |
-| `llm.ollama.max_tool_rounds` | int | `6` | Max tool-call → result → model rounds per user message before a forced final answer. See [Reference → orchestrator loop](REFERENCE.md#the-orchestrator-loop). |
 
 ### `agent`
 
@@ -83,6 +87,7 @@ default shown.
 |---|---|---|---|
 | `agent.system_prompt` | string | `"You are RemoteToolbox, a helpful self-hosted assistant."` | Prepended to every conversation. Keep it short and concrete; it steers tool use. |
 | `agent.history_limit` | int | `20` | Messages kept per chat (in memory). Older messages drop off; trimming never leaves a dangling `tool` message first. |
+| `agent.max_tool_rounds` | int | `6` | Max tool-call → result → model rounds per user message before a forced final answer. Backend-neutral. See [Reference → orchestrator loop](REFERENCE.md#the-orchestrator-loop). |
 
 ### `tools`
 
