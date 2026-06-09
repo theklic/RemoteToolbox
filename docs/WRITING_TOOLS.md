@@ -159,6 +159,43 @@ def read_note(name: str) -> str:
     return path.read_text()
 ```
 
+## Proactive messages (digests, alerts)
+
+Normally a tool runs because the user asked something. But a tool can also send a
+message **unprompted** — a morning digest, a "backup finished" ping, a sensor
+alert. The framework gives you one primitive; **your tool decides when and why**
+to use it (RemoteToolbox has no built-in scheduler).
+
+```python
+from remotetoolbox import notify, notify_agent, tool
+
+@tool(description="Send myself a reminder now.")
+def remind_me(text: str) -> str:
+    notify(f"⏰ {text}")            # a message YOU composed
+    return "Sent."
+```
+
+- `notify(text, to=None)` — push `text` to a chat. `to` defaults to the adapter's
+  default chat (for Telegram, your first allowed user). Pass `to="<chat_id>"` to
+  target a specific chat.
+- `notify_agent(prompt, to=None)` — let the **agent** compose the message: it runs
+  `prompt` through the LLM and your other tools, then sends the reply. Great for
+  digests:
+
+  ```python
+  notify_agent("Write my morning digest using the weather and calendar tools.")
+  ```
+
+Both are **fire-and-forget** and **thread-safe**, so you can call them from a
+background timer your tool starts. A self-scheduling "07:00 digest" pattern using
+`threading.Timer` is in [`examples/tools/proactive/`](../examples/tools/proactive/).
+
+> Outbound delivery only works while RemoteToolbox is **running** with a chat
+> adapter. To send a message: for a DM the `chat_id` is your Telegram user ID
+> (the one in `RTB_ALLOWED_USERS`), and you must have messaged the bot once.
+> Tools are trusted code — be deliberate about what you push. See
+> [SECURITY.md](SECURITY.md).
+
 ## Designing tools small models can use
 
 You'll likely run a smaller local model. Help it succeed:

@@ -15,6 +15,7 @@ verify.
 - [`LLMMessage` / `ToolCall`](#llmmessage--toolcall)
 - [The orchestrator loop](#the-orchestrator-loop)
 - [Chat adapter contract](#chat-adapter-contract)
+- [Proactive messaging (`notify`)](#proactive-messaging)
 - [Factories & entry point](#factories--entry-point)
 - [Error & message reference](#error--message-reference)
 
@@ -322,6 +323,35 @@ class ChatAdapter(ABC):
   sessions) live on the right loop. (See `telegram.py`'s `post_init` for the
   "library owns the loop" pattern.)
 - Register a new adapter in `chat/__init__.py:build_adapter`.
+
+---
+
+## Proactive messaging
+
+Source: [`messaging.py`](../src/remotetoolbox/messaging.py). The primitive that
+lets a tool send a message **outbound / unprompted** (digests, alerts). Public:
+`from remotetoolbox import notify, notify_agent`.
+
+```python
+notify(text: str, to: str | int | None = None) -> concurrent.futures.Future
+notify_agent(prompt: str, to: str | int | None = None) -> concurrent.futures.Future
+```
+
+- `notify` delivers `text` to chat `to` via the active adapter. `notify_agent`
+  first runs `prompt` through the orchestrator (tools + LLM) and sends the reply.
+- `to` defaults to the adapter's default chat (Telegram: the first
+  `allowed_users` id; console: `"console"`). Missing target → `RuntimeError`.
+- **Fire-and-forget and thread-safe** — the call schedules delivery on the
+  adapter's event loop (via `run_coroutine_threadsafe`) and returns immediately,
+  so it's safe from a tool's background thread. The returned `Future` lets a
+  non-loop thread `.result()` to confirm/await; delivery errors are logged and
+  exposed on the Future (never raised into the tool).
+- Requires a **running** adapter; called otherwise → `RuntimeError`
+  ("no active messenger"). The adapter wires this up at startup via
+  `messaging.configure(...)` and clears it on shutdown.
+
+The framework provides only the send; scheduling/triggering is the tool's job.
+Guide + a self-scheduling example: [WRITING_TOOLS.md](WRITING_TOOLS.md#proactive-messages-digests-alerts).
 
 ---
 

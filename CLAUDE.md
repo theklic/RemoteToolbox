@@ -50,6 +50,12 @@ This is what most users will ask. Do exactly this:
 7. Tell the user to **restart** RemoteToolbox (tools load at startup) and how to
    test it in the console adapter (`python -m remotetoolbox`).
 
+For **proactive** tools (digests, alerts), a tool can push a message unprompted
+with `from remotetoolbox import notify, notify_agent` — `notify(text)` sends text
+you composed; `notify_agent(prompt)` lets the agent compose it. The framework
+only sends; the tool owns when/why (no built-in scheduler). See
+[`docs/WRITING_TOOLS.md`](docs/WRITING_TOOLS.md#proactive-messages-digests-alerts).
+
 Full details: [`docs/WRITING_TOOLS.md`](docs/WRITING_TOOLS.md). Copyable
 examples: [`examples/tools/`](examples/tools/).
 
@@ -80,6 +86,7 @@ src/remotetoolbox/
 ├── config.py          pydantic config models; loads config.yaml + .env (${VAR} expansion)
 ├── registry.py        @tool decorator + JSON-schema generation  ← STABLE PUBLIC API
 ├── orchestrator.py    the agent loop (chat → LLM → tools → reply)
+├── messaging.py       notify()/notify_agent() — proactive outbound messages  ← PUBLIC API
 ├── scaffold.py        `init-tools` — scaffolds a user's separate tools repo
 ├── llm/               LLMBackend interface + Ollama backend
 ├── chat/              ChatAdapter interface + console/telegram adapters
