@@ -8,6 +8,12 @@ the agent can call. You write it, drop it in `./tools`, restart, and chat to it.
 > changelog for your tools (in their own git repo), see
 > [MANAGING_TOOLS.md](MANAGING_TOOLS.md).
 
+> 💡 **Looking for things to build against?** The community-maintained
+> [public-apis/public-apis](https://github.com/public-apis/public-apis) list is a
+> great catalogue of free APIs — weather, transit, finance, fun — and many need
+> **no API key at all**, so you can wire up a tool in minutes. For the ones that
+> do, put the key in `.env` (see [Secrets & credentials](#secrets--credentials)).
+
 ## The shape of a tool
 
 ```python
