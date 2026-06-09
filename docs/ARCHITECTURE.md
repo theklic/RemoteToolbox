@@ -82,6 +82,15 @@ unified tool list and the orchestrator calls them the same way.
 - Tools are loaded **once at startup**. Add/change a tool → restart the process.
 - Nothing is written to disk by the framework except logs.
 
+## Proactive (outbound) messages
+
+The flow above is reactive, but a tool can also push a message **unprompted** via
+`notify()` / `notify_agent()` ([`messaging.py`](../src/remotetoolbox/messaging.py)).
+At startup the active adapter registers a send function + its event loop with the
+messaging module; `notify` schedules delivery onto that loop thread-safely (so a
+tool's background timer can call it). There's deliberately **no scheduler** — the
+tool owns the "when/why". See [REFERENCE.md](REFERENCE.md#proactive-messaging).
+
 ## What this is *not*
 
 No multi-agent orchestration, no RAG, no web UI, no plugin marketplace. If you

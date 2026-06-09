@@ -97,6 +97,19 @@ trust the tools it advertises. That means:
 - Its tool results flow back into the model, so the prompt-injection note above
   applies to them too.
 
+### Proactive (outbound) messages
+
+Tools can send messages to you unprompted via `notify()` / `notify_agent()` (see
+[WRITING_TOOLS.md](WRITING_TOOLS.md#proactive-messages-digests-alerts)). Because
+tools are trusted code, this is a capability you grant by installing the tool:
+
+- A buggy or hostile tool could spam you, or push attacker-influenced content
+  (e.g. text a `notify_agent` digest pulled from a web page). Only run tools you
+  trust, and prefer `notify` (text you control) over `notify_agent` for anything
+  high-stakes.
+- Messages go to the default/target chat only. Telegram will only deliver to a
+  user who has already started your bot, so a tool can't message strangers.
+
 ## Network exposure
 
 The recommended Telegram setup uses **long-polling** (the bot reaches out to

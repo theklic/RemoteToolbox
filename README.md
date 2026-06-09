@@ -172,6 +172,9 @@ call `get_weather("Oslo")` and tells you the answer.
 👉 The full, friendly guide (passwords, more examples, do's and don'ts) is
 [**docs/WRITING_TOOLS.md**](docs/WRITING_TOOLS.md). **Start here to build things.**
 
+💡 Need ideas or data sources? [public-apis/public-apis](https://github.com/public-apis/public-apis)
+is a big list of free APIs — many need no API key, so you can build a tool in minutes.
+
 ---
 
 ## Don't want to write code? Let an AI do it

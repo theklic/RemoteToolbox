@@ -11,8 +11,10 @@ default so a freshly-started bot isn't open to the world. See docs/SECURITY.md.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
+from .. import messaging
 from ..config import TelegramConfig
 from .base import Assemble, ChatAdapter
 
@@ -49,11 +51,24 @@ class TelegramAdapter(ChatAdapter):
             user = update.effective_user
             return bool(user and user.id in self.allowed)
 
-        async def _post_init(_app: object) -> None:
+        async def _post_init(app: object) -> None:
             # Build tools + LLM inside PTB's own event loop.
             self.orchestrator = await self._assemble()
 
+            # Wire outbound messaging so tools can notify() proactively. Sends go
+            # through the running bot; default target is the first allowed user.
+            async def _send(text: str, to: str) -> None:
+                await app.bot.send_message(chat_id=int(to), text=text)  # type: ignore[attr-defined]
+
+            messaging.configure(
+                send=_send,
+                loop=asyncio.get_running_loop(),
+                default_to=next(iter(self.allowed), None),
+                orchestrator=self.orchestrator,
+            )
+
         async def _post_shutdown(_app: object) -> None:
+            messaging.reset()
             if self.orchestrator is not None:
                 await self.orchestrator.aclose()
 
