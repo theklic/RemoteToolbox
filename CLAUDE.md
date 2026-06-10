@@ -172,6 +172,13 @@ reading source:
 If you change a contract, default, or error message, update those two docs in the
 **same commit** so they stay accurate.
 
+## Picking up work
+
+[`BACKLOG.md`](BACKLOG.md) is the prioritized work list (from project review),
+written so an agent can take one item end-to-end: each has the problem, file
+locations, approach, and acceptance criteria — plus decisions the owner has
+already made (don't re-open those). Delete an item in the same PR that fixes it.
+
 ## When unsure
 
 Read [`orchestrator.py`](src/remotetoolbox/orchestrator.py) first — it's short
