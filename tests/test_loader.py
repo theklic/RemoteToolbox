@@ -9,7 +9,42 @@ from pathlib import Path
 from textwrap import dedent
 
 from remotetoolbox.config import ToolsConfig
-from remotetoolbox.tooling import load_tools
+from remotetoolbox.registry import ToolSpec
+from remotetoolbox.tooling import Toolset, load_tools
+
+
+def _slow_spec() -> ToolSpec:
+    async def slow() -> str:
+        await asyncio.sleep(5)
+        return "done"
+
+    return ToolSpec(
+        name="slow", description="x", parameters={"type": "object", "properties": {}},
+        func=slow, is_async=True,
+    )
+
+
+def test_tool_call_timeout_returns_error_text() -> None:
+    ts = Toolset(specs={"slow": _slow_spec()}, call_timeout=0.05)
+    out = asyncio.run(ts.call("slow", {}))
+    assert "slow" in out and "timed out" in out
+
+
+def test_tool_call_timeout_zero_disables_limit() -> None:
+    async def quick() -> str:
+        return "fast"
+
+    spec = ToolSpec(
+        name="quick", description="x", parameters={"type": "object", "properties": {}},
+        func=quick, is_async=True,
+    )
+    ts = Toolset(specs={"quick": spec}, call_timeout=0)
+    assert asyncio.run(ts.call("quick", {})) == "fast"
+
+
+def test_load_tools_propagates_call_timeout() -> None:
+    ts = asyncio.run(load_tools(ToolsConfig(paths=[], call_timeout=12.0)))
+    assert ts.call_timeout == 12.0
 
 
 def _write(path: Path, body: str) -> None:

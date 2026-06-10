@@ -94,6 +94,7 @@ default shown.
 | Key | Type | Default | Description |
 |---|---|---|---|
 | `tools.paths` | list[string] | `["./tools"]` | Directories scanned **recursively** for `@tool` functions. `~` is expanded; may point at a separate tools repo anywhere on disk (see [Managing Tools](MANAGING_TOOLS.md)). Hidden/vendored dirs are skipped — see [Reference → tool discovery](REFERENCE.md#tool-discovery-rules). |
+| `tools.call_timeout` | float | `60.0` | Seconds before a single tool call is abandoned (`0` = no limit). Stops one hung tool from wedging a chat. See [Reference → Toolset](REFERENCE.md#toolset). |
 | `tools.mcp_servers` | list | `[]` | External MCP servers to connect (optional; needs the `mcp` extra). |
 | `tools.mcp_servers[].name` | string | — | Label for the server (required). |
 | `tools.mcp_servers[].command` | string | — | Executable to launch (required), e.g. `npx`. |

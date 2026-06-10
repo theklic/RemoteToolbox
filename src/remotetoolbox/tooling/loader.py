@@ -30,6 +30,7 @@ class Toolset:
     """The set of tools available to the agent, plus how to call them."""
 
     specs: dict[str, ToolSpec] = field(default_factory=dict)
+    call_timeout: float | None = None  # seconds; None/0 = no limit
     _mcp: Any = None  # optional MCPManager, lazily created
 
     def ollama_tools(self) -> list[dict[str, Any]]:
@@ -49,11 +50,20 @@ class Toolset:
             return f"Error: no tool named {name!r}. Available: {', '.join(self.specs) or 'none'}."
         try:
             if spec.is_async:
-                result = await spec.func(**arguments)
+                call = spec.func(**arguments)
             else:
                 # Run sync tools off the event loop so blocking I/O doesn't stall chat.
-                result = await asyncio.to_thread(spec.func, **arguments)
+                call = asyncio.to_thread(spec.func, **arguments)
+            if self.call_timeout and self.call_timeout > 0:
+                result = await asyncio.wait_for(call, self.call_timeout)
+            else:
+                result = await call
             return _stringify(result)
+        except asyncio.TimeoutError:
+            # A timed-out sync tool's thread keeps running (it can't be killed);
+            # we just stop waiting for it. Async tools are cancelled cleanly.
+            log.warning("Tool %s timed out after %ss", name, self.call_timeout)
+            return f"Error: tool {name} timed out after {self.call_timeout:g}s."
         except TypeError as exc:
             return f"Error calling {name}: bad arguments ({exc})."
         except Exception as exc:  # noqa: BLE001 - surface any tool error to the model
@@ -152,7 +162,7 @@ async def load_tools(config: ToolsConfig) -> Toolset:
         _discover_dir(Path(raw_path).expanduser())
 
     specs = dict(REGISTRY)  # snapshot
-    toolset = Toolset(specs=specs)
+    toolset = Toolset(specs=specs, call_timeout=config.call_timeout)
 
     if config.mcp_servers:
         from .mcp_client import MCPManager  # optional dependency

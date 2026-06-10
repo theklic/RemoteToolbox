@@ -41,8 +41,21 @@ class TelegramConfig(_Strict):
     allowed_users: str = ""  # comma-separated user IDs
 
     @property
+    def allowed_user_ids_ordered(self) -> list[int]:
+        """Allowed user IDs in the order listed in ``allowed_users`` (deduped).
+
+        Order matters: the first id is the default recipient for proactive
+        messages, so this must follow the config, not set-iteration order.
+        """
+        seen: dict[int, None] = {}
+        for x in self.allowed_users.split(","):
+            if x.strip().isdigit():
+                seen.setdefault(int(x), None)
+        return list(seen)
+
+    @property
     def allowed_user_ids(self) -> set[int]:
-        return {int(x) for x in self.allowed_users.split(",") if x.strip().isdigit()}
+        return set(self.allowed_user_ids_ordered)
 
 
 class ChatConfig(_Strict):
@@ -79,6 +92,9 @@ class MCPServerConfig(_Strict):
 class ToolsConfig(_Strict):
     paths: list[str] = Field(default_factory=lambda: ["./tools"])
     mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
+    # Seconds before a single tool call is abandoned (0 = no limit). Stops one
+    # hung tool from wedging a chat (and, since updates are sequential, all chats).
+    call_timeout: float = 60.0
 
 
 class LoggingConfig(_Strict):

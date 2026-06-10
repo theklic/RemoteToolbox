@@ -172,6 +172,9 @@ loaded `ToolSpec`s and knows how to call them.
 - Unknown name → returns `Error: no tool named '<name>'. Available: …`.
 - **Async** tools are awaited; **sync** tools run via `asyncio.to_thread` so
   blocking I/O doesn't stall the chat loop.
+- A call exceeding `tools.call_timeout` (default 60s; `0` disables) → returns
+  `Error: tool <name> timed out after <n>s.` An async tool is cancelled; a sync
+  tool's thread can't be killed, so it keeps running but its result is abandoned.
 - `TypeError` (bad arguments) → returns `Error calling <name>: bad arguments (…)`.
 - Any other exception → caught, logged with traceback, returns
   `Error: tool <name> failed: <exc>`.
@@ -323,6 +326,10 @@ class ChatAdapter(ABC):
   sessions) live on the right loop. (See `telegram.py`'s `post_init` for the
   "library owns the loop" pattern.)
 - Register a new adapter in `chat/__init__.py:build_adapter`.
+- **Mind platform message limits.** Telegram rejects messages over 4,096 chars;
+  the adapter splits replies and outbound `notify` sends into chunks (preferring
+  newline boundaries) via `_chunks()`. A new adapter should do the equivalent for
+  its platform so long replies/digests don't silently fail.
 
 ---
 
@@ -334,13 +341,17 @@ lets a tool send a message **outbound / unprompted** (digests, alerts). Public:
 
 ```python
 notify(text: str, to: str | int | None = None) -> concurrent.futures.Future
-notify_agent(prompt: str, to: str | int | None = None) -> concurrent.futures.Future
+notify_agent(prompt: str, to: str | int | None = None, *, share_history: bool = False) -> concurrent.futures.Future
 ```
 
 - `notify` delivers `text` to chat `to` via the active adapter. `notify_agent`
   first runs `prompt` through the orchestrator (tools + LLM) and sends the reply.
-- `to` defaults to the adapter's default chat (Telegram: the first
-  `allowed_users` id; console: `"console"`). Missing target → `RuntimeError`.
+- `notify_agent` runs the prompt in a **separate** conversation
+  (id `"<to>#proactive"`) so a scheduled digest doesn't pollute or get confused by
+  the user's interactive history. Pass `share_history=True` to share it instead.
+- `to` defaults to the adapter's default chat (Telegram: the **first id listed in
+  `allowed_users`** — config order, not set order; console: `"console"`). Missing
+  target → `RuntimeError`.
 - **Fire-and-forget and thread-safe** — the call schedules delivery on the
   adapter's event loop (via `run_coroutine_threadsafe`) and returns immediately,
   so it's safe from a tool's background thread. The returned `Future` lets a
@@ -400,6 +411,7 @@ for the text you saw.)
 | `Error: no tool named '<x>'. Available: …` (to the model) | `tooling/loader.py` | The model called a tool that isn't loaded. Usually a hallucinated name or a file that didn't load. |
 | `Error calling <x>: bad arguments (…)` (to the model) | `tooling/loader.py` | The model passed wrong arguments. Tighten the tool's `description`/types so the schema is clearer. |
 | `Error: tool <x> failed: <exc>` (to the model) | `tooling/loader.py` | The tool raised. Check logs for the traceback. |
+| `Error: tool <x> timed out after <n>s.` (to the model) | `tooling/loader.py` | The tool exceeded `tools.call_timeout`. Give it its own internal timeout, or raise the limit. |
 
 For symptom-based ("the bot won't reply") troubleshooting, see
 [DEPLOYMENT.md → Troubleshooting](DEPLOYMENT.md#troubleshooting).

@@ -192,6 +192,10 @@ def remind_me(text: str) -> str:
   notify_agent("Write my morning digest using the weather and calendar tools.")
   ```
 
+  It runs in a **separate conversation** from your interactive chat, so a daily
+  digest won't clutter or skew your normal back-and-forth. Pass
+  `share_history=True` if you *want* it to use the interactive context.
+
 Both are **fire-and-forget** and **thread-safe**, so you can call them from a
 background timer your tool starts. A self-scheduling "07:00 digest" pattern using
 `threading.Timer` is in [`examples/tools/proactive/`](../examples/tools/proactive/).
