@@ -65,20 +65,49 @@ def test_notify_delivers_to_default_and_explicit_target(loop_thread):
     assert ("123", "to bob") in sent
 
 
+class _RecordingOrchestrator:
+    def __init__(self) -> None:
+        self.handled: list[str] = []  # chat_ids the agent ran under
+
+    async def handle(self, chat_id: str, prompt: str) -> str:
+        self.handled.append(chat_id)
+        return f"digest for {chat_id}: {prompt.upper()}"
+
+
 def test_notify_agent_runs_prompt_then_sends(loop_thread):
     sent: list[tuple[str, str]] = []
 
     async def send(text: str, to: str) -> None:
         sent.append((to, text))
 
-    class FakeOrchestrator:
-        async def handle(self, chat_id: str, prompt: str) -> str:
-            return f"digest for {chat_id}: {prompt.upper()}"
-
-    messaging.configure(send=send, loop=loop_thread, default_to="42", orchestrator=FakeOrchestrator())
+    orch = _RecordingOrchestrator()
+    messaging.configure(send=send, loop=loop_thread, default_to="42", orchestrator=orch)
 
     messaging.notify_agent("morning digest").result(timeout=2)
-    assert sent == [("42", "digest for 42: MORNING DIGEST")]
+    # Delivered to the real chat (42)...
+    assert sent == [("42", "digest for 42#proactive: MORNING DIGEST")]
+    # ...but the agent ran in a SEPARATE history namespace, not the user's chat.
+    assert orch.handled == ["42#proactive"]
+
+
+def test_notify_agent_does_not_touch_interactive_history(loop_thread):
+    async def send(text: str, to: str) -> None: ...
+
+    orch = _RecordingOrchestrator()
+    messaging.configure(send=send, loop=loop_thread, default_to="42", orchestrator=orch)
+
+    messaging.notify_agent("digest", to="999").result(timeout=2)
+    assert orch.handled == ["999#proactive"]  # never the bare interactive id "999"
+
+
+def test_notify_agent_share_history_uses_interactive_chat(loop_thread):
+    async def send(text: str, to: str) -> None: ...
+
+    orch = _RecordingOrchestrator()
+    messaging.configure(send=send, loop=loop_thread, default_to="42", orchestrator=orch)
+
+    messaging.notify_agent("digest", to="999", share_history=True).result(timeout=2)
+    assert orch.handled == ["999"]
 
 
 def test_notify_agent_without_orchestrator_raises(loop_thread):

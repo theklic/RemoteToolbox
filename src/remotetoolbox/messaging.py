@@ -120,22 +120,30 @@ def notify(text: str, to: str | int | None = None) -> Future:
     return _schedule(lambda: send(text, target))
 
 
-def notify_agent(prompt: str, to: str | int | None = None) -> Future:
+def notify_agent(prompt: str, to: str | int | None = None, *, share_history: bool = False) -> Future:
     """Run ``prompt`` through the agent (tools + LLM) and send the reply to a chat.
 
     Use this for LLM-composed messages — e.g. a morning digest where the agent
-    calls your other tools and summarises. ``to`` doubles as the conversation id.
+    calls your other tools and summarises.
+
+    prompt: What to ask the agent.
+    to: Chat id to deliver to (defaults to the adapter's default chat).
+    share_history: By default the prompt runs in a **separate** conversation
+        (id ``"<to>#proactive"``) so a scheduled digest doesn't pollute — or get
+        confused by — your interactive chat history. Set True to share the
+        interactive conversation's context instead.
     """
     _require_active()
     if _M.orchestrator is None:
         raise RuntimeError("notify_agent(): the agent isn't available in this context.")
     target = _resolve(to)
+    convo_id = target if share_history else f"{target}#proactive"
     orchestrator = _M.orchestrator
     send = _M.send
     assert send is not None
 
     async def _run() -> None:
-        reply = await orchestrator.handle(target, prompt)
+        reply = await orchestrator.handle(convo_id, prompt)
         await send(reply, target)
 
     return _schedule(_run)

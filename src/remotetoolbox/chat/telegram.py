@@ -20,6 +20,32 @@ from .base import Assemble, ChatAdapter
 
 log = logging.getLogger(__name__)
 
+# Telegram rejects messages longer than this many characters.
+_TELEGRAM_LIMIT = 4096
+
+
+def _chunks(text: str, limit: int = _TELEGRAM_LIMIT) -> list[str]:
+    """Split ``text`` into Telegram-sized pieces, preferring newline boundaries.
+
+    Empty text yields no chunks (Telegram rejects empty messages). When a split
+    falls on a newline that newline is consumed; hard splits keep every character.
+    """
+    if not text:
+        return []
+    parts: list[str] = []
+    rest = text
+    while len(rest) > limit:
+        cut = rest.rfind("\n", 0, limit)
+        if cut <= 0:  # no newline in range — hard split
+            parts.append(rest[:limit])
+            rest = rest[limit:]
+        else:
+            parts.append(rest[:cut])
+            rest = rest[cut + 1:]  # drop the newline we split on
+    if rest:
+        parts.append(rest)
+    return parts
+
 
 class TelegramAdapter(ChatAdapter):
     def __init__(self, config: TelegramConfig, assemble: Assemble) -> None:
@@ -30,7 +56,9 @@ class TelegramAdapter(ChatAdapter):
                 "Telegram adapter selected but TELEGRAM_BOT_TOKEN is empty. "
                 "Create a bot via @BotFather and set it in .env."
             )
-        self.allowed = config.allowed_user_ids
+        # Ordered list (config order) for the default recipient; set for membership.
+        self.allowed_ordered = config.allowed_user_ids_ordered
+        self.allowed = set(self.allowed_ordered)
         if not self.allowed:
             log.warning(
                 "RTB_ALLOWED_USERS is empty: the bot will refuse EVERYONE. "
@@ -58,12 +86,13 @@ class TelegramAdapter(ChatAdapter):
             # Wire outbound messaging so tools can notify() proactively. Sends go
             # through the running bot; default target is the first allowed user.
             async def _send(text: str, to: str) -> None:
-                await app.bot.send_message(chat_id=int(to), text=text)  # type: ignore[attr-defined]
+                for part in _chunks(text):
+                    await app.bot.send_message(chat_id=int(to), text=part)  # type: ignore[attr-defined]
 
             messaging.configure(
                 send=_send,
                 loop=asyncio.get_running_loop(),
-                default_to=next(iter(self.allowed), None),
+                default_to=self.allowed_ordered[0] if self.allowed_ordered else None,
                 orchestrator=self.orchestrator,
             )
 
@@ -81,7 +110,8 @@ class TelegramAdapter(ChatAdapter):
             chat_id = str(update.effective_chat.id)
             await ctx.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
             reply = await self.orchestrator.handle(chat_id, update.message.text or "")
-            await update.message.reply_text(reply)
+            for part in _chunks(reply):
+                await update.message.reply_text(part)
 
         async def on_reset(update: Update, _ctx: ContextTypes.DEFAULT_TYPE) -> None:
             if not _authorized(update) or self.orchestrator is None:

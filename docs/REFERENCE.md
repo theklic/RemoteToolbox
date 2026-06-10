@@ -323,6 +323,10 @@ class ChatAdapter(ABC):
   sessions) live on the right loop. (See `telegram.py`'s `post_init` for the
   "library owns the loop" pattern.)
 - Register a new adapter in `chat/__init__.py:build_adapter`.
+- **Mind platform message limits.** Telegram rejects messages over 4,096 chars;
+  the adapter splits replies and outbound `notify` sends into chunks (preferring
+  newline boundaries) via `_chunks()`. A new adapter should do the equivalent for
+  its platform so long replies/digests don't silently fail.
 
 ---
 
@@ -334,13 +338,17 @@ lets a tool send a message **outbound / unprompted** (digests, alerts). Public:
 
 ```python
 notify(text: str, to: str | int | None = None) -> concurrent.futures.Future
-notify_agent(prompt: str, to: str | int | None = None) -> concurrent.futures.Future
+notify_agent(prompt: str, to: str | int | None = None, *, share_history: bool = False) -> concurrent.futures.Future
 ```
 
 - `notify` delivers `text` to chat `to` via the active adapter. `notify_agent`
   first runs `prompt` through the orchestrator (tools + LLM) and sends the reply.
-- `to` defaults to the adapter's default chat (Telegram: the first
-  `allowed_users` id; console: `"console"`). Missing target → `RuntimeError`.
+- `notify_agent` runs the prompt in a **separate** conversation
+  (id `"<to>#proactive"`) so a scheduled digest doesn't pollute or get confused by
+  the user's interactive history. Pass `share_history=True` to share it instead.
+- `to` defaults to the adapter's default chat (Telegram: the **first id listed in
+  `allowed_users`** — config order, not set order; console: `"console"`). Missing
+  target → `RuntimeError`.
 - **Fire-and-forget and thread-safe** — the call schedules delivery on the
   adapter's event loop (via `run_coroutine_threadsafe`) and returns immediately,
   so it's safe from a tool's background thread. The returned `Future` lets a

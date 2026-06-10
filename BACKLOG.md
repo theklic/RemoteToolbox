@@ -26,62 +26,6 @@ extra context. Work top-down within a priority band unless told otherwise.
 
 ---
 
-## P0 — fix before the next release (bugs on the shipped proactive path)
-
-### P0-1: Telegram messages over 4,096 chars fail silently
-
-- **Type:** bug
-- **Where:** `src/remotetoolbox/chat/telegram.py` — `on_message`'s
-  `update.message.reply_text(reply)` and the outbound `_send` in `_post_init`.
-- **Problem:** Telegram rejects messages longer than 4,096 characters. A long
-  LLM reply — and especially a `notify_agent` digest — raises `BadRequest`
-  inside the handler; python-telegram-bot logs it and the user receives
-  *nothing*. No chunking exists (verified: no length handling in the adapter).
-- **Approach:** add a small `_chunk(text, limit=4096)` helper (split on
-  paragraph/newline boundaries where possible, hard-split otherwise) and use it
-  in **both** the reply path and the outbound `_send`. Keep it in the Telegram
-  adapter — other adapters don't share the limit.
-- **Acceptance:** unit test that a >4,096-char string is split into <=4,096-char
-  parts, order preserved, nothing dropped; both send paths use the helper.
-  Document the behavior in `docs/REFERENCE.md` (chat adapter contract notes).
-
-### P0-2: `notify_agent` pollutes the user's interactive conversation history
-
-- **Type:** bug (surprising behavior)
-- **Where:** `src/remotetoolbox/messaging.py` — `notify_agent` calls
-  `orchestrator.handle(target, prompt)` with the *user's own chat id* as the
-  conversation id.
-- **Problem:** every scheduled digest injects its prompt + reply into the user's
-  real DM history: it consumes `agent.history_limit` slots and steers subsequent
-  interactive answers. It also widens the concurrency race in P0-4.
-- **Approach:** run proactive prompts in a separate history namespace, e.g.
-  `chat_id = f"{target}#proactive"`, while still *sending* to `target`. Consider
-  a `share_history: bool = False` parameter on `notify_agent` for callers who
-  *want* shared context.
-- **Acceptance:** test that `notify_agent` does not append to the interactive
-  chat's history (inspect `orchestrator._histories`); docs updated in
-  `docs/REFERENCE.md` (Proactive messaging section) and
-  `docs/WRITING_TOOLS.md` (proactive section).
-
-### P0-3: Default notify target is arbitrary when multiple users are allowed
-
-- **Type:** bug
-- **Where:** `src/remotetoolbox/chat/telegram.py` (`default_to=next(iter(self.allowed), None)`)
-  and `src/remotetoolbox/config.py` (`allowed_user_ids` returns a `set[int]`).
-- **Problem:** `allowed` is a set, so with more than one allowed user the
-  "default" recipient is whichever id iterates first — not "your first allowed
-  user" as `docs/WRITING_TOOLS.md` claims. A digest could go to the wrong
-  household member.
-- **Approach:** preserve config order — add an ordered accessor (e.g.
-  `allowed_user_ids_ordered: list[int]` parsed from the comma-separated string,
-  keeping the set for membership checks) and use its first element for
-  `default_to`. Keep docs claim accurate ("the first id listed in
-  `RTB_ALLOWED_USERS`").
-- **Acceptance:** test that ordering follows the config string (e.g. "222,111"
-  → default 222); membership checks unchanged; docs verified accurate.
-
----
-
 ## P1 — hardening (small, contained; bundle with P0 if convenient)
 
 ### P1-1: Per-chat lock — proactive and interactive turns can interleave
@@ -92,8 +36,10 @@ extra context. Work top-down within a priority band unless told otherwise.
   default), but a `notify_agent` scheduled from a tool's background thread runs
   *concurrently* with an in-flight `handle()` for the same chat id. Both append
   to the same unlocked history list mid-loop, interleaving tool/assistant
-  messages and confusing the model. (P0-2 reduces the overlap but doesn't
-  eliminate same-id concurrency.)
+  messages and confusing the model. (The merged proactive-namespace work means a
+  default digest no longer shares the interactive chat's id, but same-id
+  concurrency still happens — e.g. two `notify_agent` calls, or
+  `share_history=True`.)
 - **Approach:** `self._locks: dict[str, asyncio.Lock]` keyed like `_histories`;
   `handle()` acquires the chat's lock around the loop. Keep it simple — no
   global lock, no queueing semantics.
