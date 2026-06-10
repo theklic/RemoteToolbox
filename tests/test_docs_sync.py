@@ -220,3 +220,73 @@ def test_internal_link_resolves(src: Path, target: str) -> None:
             f"{src.relative_to(ROOT)}: anchor #{anchor} not found in "
             f"{dest.relative_to(ROOT)} (heading renamed or removed?)."
         )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. REFERENCE.md error-table strings still exist in source
+# ─────────────────────────────────────────────────────────────────────────────
+
+_REFERENCE_DOC = (ROOT / "docs" / "REFERENCE.md").read_text()
+_SRC_PY = "\n".join(p.read_text() for p in (ROOT / "src").rglob("*.py"))
+_PLACEHOLDER = re.compile(r"<[^>]+>|…|\{[^}]*\}")
+
+# Messages produced by third-party libs (not our source) — exempt from the check.
+_EXEMPT_ERROR_MESSAGES: set[str] = set()
+
+
+def _norm_msg(s: str) -> str:
+    """Normalise away quoting/escaping noise so doc text and source f-strings
+    can be compared (drops backslashes, backticks, quotes; collapses whitespace)."""
+    for ch in ("\\", "`", "'", '"'):
+        s = s.replace(ch, "")
+    return re.sub(r"\s+", " ", s).strip()
+
+
+def _norm_src(s: str) -> str:
+    """Like _norm_msg, but first join Python implicit string-concatenation seams
+    (``"…a. " f"b…"``) so an error message split across adjacent string literals
+    reads as one continuous string."""
+    s = re.sub(r"""["']\s*(?:[frbu]{1,2})?["']""", "", s)
+    return _norm_msg(s)
+
+
+def _error_table_messages() -> list[str]:
+    section = _REFERENCE_DOC.split("## Error & message reference", 1)[-1]
+    messages: list[str] = []
+    for line in section.splitlines():
+        line = line.strip()
+        if not line.startswith("| `"):
+            continue
+        cell = line.split("|")[1].strip()
+        m = re.search(r"`(.+)`", cell)  # greedy: first backtick to last
+        if m:
+            messages.append(m.group(1).replace("\\`", "`"))
+    return messages
+
+
+def _longest_literal(message: str) -> str:
+    """The longest placeholder-free, normalised fragment of an error message."""
+    parts = [_norm_msg(p) for p in _PLACEHOLDER.split(message)]
+    return max(parts, key=len, default="")
+
+
+_ERROR_ROWS = [(_longest_literal(m), m) for m in _error_table_messages()]
+_SRC_NORM = _norm_src(_SRC_PY)
+
+
+@pytest.mark.parametrize(
+    "fragment,message", _ERROR_ROWS, ids=[m[:45] for _f, m in _ERROR_ROWS]
+)
+def test_reference_error_string_exists_in_source(fragment: str, message: str) -> None:
+    if message in _EXEMPT_ERROR_MESSAGES or len(fragment) < 10:
+        pytest.skip("no distinctive literal fragment to anchor on")
+    assert fragment in _SRC_NORM, (
+        f"docs/REFERENCE.md error table lists {message!r} but its literal part "
+        f"{fragment!r} no longer appears in src/ — a reworded error string. "
+        f"Update the table (or add to _EXEMPT_ERROR_MESSAGES if it's a library string)."
+    )
+
+
+def test_error_table_was_actually_parsed() -> None:
+    # Guard against the parser silently matching nothing (then the test above is a no-op).
+    assert len(_ERROR_ROWS) >= 10

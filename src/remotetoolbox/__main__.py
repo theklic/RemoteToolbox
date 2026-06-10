@@ -71,11 +71,21 @@ def main() -> None:
         "--no-git", action="store_true", help="Copy files only; don't run git init/commit."
     )
 
+    sub.add_parser("doctor", help="Check your setup (Ollama, token, tools) and report problems.")
+
     args = parser.parse_args()
 
     if args.command == "init-tools":
         _cmd_init_tools(args.path, args.no_git)
         return
+
+    if args.command == "doctor":
+        import asyncio
+
+        from .doctor import gather_checks, render
+
+        config = load_config(args.config, args.env)
+        raise SystemExit(render(asyncio.run(gather_checks(config))))
 
     # Default (no subcommand): run the chat agent.
     config = load_config(args.config, args.env)

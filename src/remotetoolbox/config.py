@@ -67,6 +67,8 @@ class OllamaConfig(_Strict):
     host: str = "http://localhost:11434"
     model: str = "llama3.1"
     options: dict[str, Any] = Field(default_factory=dict)
+    # Per-request timeout (seconds). Generation can be slow on modest hardware.
+    request_timeout: float = 120.0
 
 
 class LLMConfig(_Strict):

@@ -17,87 +17,12 @@ extra context. Work top-down within a priority band unless told otherwise.
 **Decisions already made by the project owner — do not re-open:**
 
 - No built-in scheduler. Tools own when/why to send proactive messages.
-- No *automatic* startup preflight warning (declined). A *manual* `doctor`
-  command is acceptable (see P2-1).
+- No *automatic* startup preflight warning (declined). The *manual* `remotetoolbox
+  doctor` command is the accepted form (shipped).
 - Example tools must never schedule themselves; self-scheduling patterns stay
   commented out.
 - `extra="forbid"` config strictness and `agent.max_tool_rounds` placement are
   settled.
-
----
-
-## P2 — quality of life / operability
-
-### P2-1: `remotetoolbox doctor` — manual preflight check
-
-- **Type:** feature (small)
-- **Where:** new subcommand in `src/remotetoolbox/__main__.py` (pattern:
-  `init-tools`); logic in a new `doctor.py`.
-- **Problem:** the most common support cases are environmental: Ollama down,
-  model not pulled, empty token, empty allowlist, tools dir missing. A manual
-  check answers "why doesn't it work?" in one command. (Note: an *automatic*
-  startup warning was explicitly declined — this must be opt-in/manual only.)
-- **Approach:** check and report, one line each: config file found + parses;
-  `GET {host}/api/tags` reachable; configured model present in the tag list;
-  if `chat.adapter: telegram` — token non-empty and `allowed_users` non-empty;
-  each `tools.paths` entry exists; count of discovered tools. Exit non-zero if
-  any check fails.
-- **Acceptance:** tests for the pass/fail paths (mock the Ollama endpoint);
-  documented in `docs/DEPLOYMENT.md` (troubleshooting points to it) and
-  `docs/REFERENCE.md` CLI table.
-
-### P2-2: Ollama client knobs — timeout and retry
-
-- **Type:** robustness
-- **Where:** `src/remotetoolbox/llm/ollama.py` (`httpx.Timeout(120.0, connect=10.0)`).
-- **Problem:** the 120s request timeout is hardcoded; transient connection blips
-  fail a whole turn with no retry.
-- **Approach:** add `llm.ollama.request_timeout` (default 120) and a single
-  cheap retry on `httpx.ConnectError`/`ReadTimeout` (not on HTTP-status errors).
-  Don't add a retry library — keep it one loop.
-- **Acceptance:** config keys documented (sync guard enforces); test that a
-  first-call `ConnectError` followed by success returns the reply.
-
-### P2-3: Drop `requirements.txt` (duplication drift)
-
-- **Type:** cleanup
-- **Where:** `requirements.txt` duplicates `pyproject.toml` deps and will drift.
-- **Approach:** delete it; grep docs for references and point everything at
-  `pip install -e .` / extras. If a pin-file is wanted later, generate it, don't
-  hand-maintain it.
-- **Acceptance:** no references to requirements.txt remain (docs-sync link guard
-  plus a grep).
-
-### P2-4: Guard REFERENCE error strings against drift
-
-- **Type:** test
-- **Where:** `tests/test_docs_sync.py`; `docs/REFERENCE.md` error table.
-- **Problem:** config keys and links are guard-railed, but the error-message
-  table is hand-maintained — a reworded error in code silently invalidates the
-  doc (and the doc's promise is "search it for any error string you hit").
-- **Approach:** parse the error table's first-column strings; for each, strip
-  placeholders (`<x>`, `…`, format specifiers) down to a distinctive literal
-  fragment and assert that fragment appears in `src/remotetoolbox/**/*.py`.
-  Mark genuinely-runtime strings (e.g. produced by PTB) as exempt via a small
-  allowlist in the test.
-- **Acceptance:** test fails when an error string in code is reworded without
-  updating the table (demonstrate via a temporary mutation in the PR
-  description, not committed).
-
-### P2-5: Clean up accumulated `sys.path` entries
-
-- **Type:** cleanup (cosmetic)
-- **Where:** `src/remotetoolbox/tooling/loader.py` (`_import_file` appends each
-  tool dir, never removes).
-- **Approach:** record appended paths during a scan; after `load_tools`
-  completes imports, they can stay (helpers may import lazily at call time — so
-  removing is *not* safe). Instead: dedupe, and remove stale entries from
-  *previous* scans if `load_tools` is called more than once in a process.
-  Honestly the smallest correct fix is to track what the loader added and only
-  re-add what the current scan needs.
-- **Acceptance:** repeated `load_tools` calls don't grow `sys.path` unboundedly;
-  sibling-helper imports (see `tests/test_loader.py`) still pass — including a
-  helper imported lazily inside a tool function body.
 
 ---
 

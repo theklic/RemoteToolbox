@@ -47,6 +47,46 @@ def test_load_tools_propagates_call_timeout() -> None:
     assert ts.call_timeout == 12.0
 
 
+def test_repeated_load_does_not_grow_syspath(tmp_path: Path) -> None:
+    import sys
+
+    _write(
+        tmp_path / "t" / "tool.py",
+        """
+        from remotetoolbox import tool
+
+        @tool(description="x")
+        def t() -> str:
+            return "ok"
+        """,
+    )
+    cfg = ToolsConfig(paths=[str(tmp_path / "t")])
+    before = len(sys.path)
+    for _ in range(5):
+        asyncio.run(load_tools(cfg))
+    # The tool dir is added once and reused, not appended five times.
+    assert len(sys.path) - before <= 1
+
+
+def test_lazy_sibling_import_works_after_load(tmp_path: Path) -> None:
+    # A helper imported inside the tool body (at call time), not at module load.
+    _write(tmp_path / "lz" / "_lazy_helper.py", "def val() -> str:\n    return 'lazy-ok'\n")
+    _write(
+        tmp_path / "lz" / "tool.py",
+        """
+        from remotetoolbox import tool
+
+        @tool(description="x")
+        def lazy() -> str:
+            from _lazy_helper import val
+            return val()
+        """,
+    )
+    ts = asyncio.run(load_tools(ToolsConfig(paths=[str(tmp_path / "lz")])))
+    # The dir must still be on sys.path so the call-time import resolves.
+    assert asyncio.run(ts.call("lazy", {})) == "lazy-ok"
+
+
 def _write(path: Path, body: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(dedent(body))
