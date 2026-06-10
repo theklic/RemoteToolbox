@@ -172,6 +172,9 @@ loaded `ToolSpec`s and knows how to call them.
 - Unknown name → returns `Error: no tool named '<name>'. Available: …`.
 - **Async** tools are awaited; **sync** tools run via `asyncio.to_thread` so
   blocking I/O doesn't stall the chat loop.
+- A call exceeding `tools.call_timeout` (default 60s; `0` disables) → returns
+  `Error: tool <name> timed out after <n>s.` An async tool is cancelled; a sync
+  tool's thread can't be killed, so it keeps running but its result is abandoned.
 - `TypeError` (bad arguments) → returns `Error calling <name>: bad arguments (…)`.
 - Any other exception → caught, logged with traceback, returns
   `Error: tool <name> failed: <exc>`.
@@ -408,6 +411,7 @@ for the text you saw.)
 | `Error: no tool named '<x>'. Available: …` (to the model) | `tooling/loader.py` | The model called a tool that isn't loaded. Usually a hallucinated name or a file that didn't load. |
 | `Error calling <x>: bad arguments (…)` (to the model) | `tooling/loader.py` | The model passed wrong arguments. Tighten the tool's `description`/types so the schema is clearer. |
 | `Error: tool <x> failed: <exc>` (to the model) | `tooling/loader.py` | The tool raised. Check logs for the traceback. |
+| `Error: tool <x> timed out after <n>s.` (to the model) | `tooling/loader.py` | The tool exceeded `tools.call_timeout`. Give it its own internal timeout, or raise the limit. |
 
 For symptom-based ("the bot won't reply") troubleshooting, see
 [DEPLOYMENT.md → Troubleshooting](DEPLOYMENT.md#troubleshooting).

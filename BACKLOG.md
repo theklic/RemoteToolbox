@@ -26,59 +26,6 @@ extra context. Work top-down within a priority band unless told otherwise.
 
 ---
 
-## P1 — hardening (small, contained; bundle with P0 if convenient)
-
-### P1-1: Per-chat lock — proactive and interactive turns can interleave
-
-- **Type:** bug (race)
-- **Where:** `src/remotetoolbox/orchestrator.py` (`_histories`, `handle`).
-- **Problem:** incoming Telegram updates are processed sequentially (PTB
-  default), but a `notify_agent` scheduled from a tool's background thread runs
-  *concurrently* with an in-flight `handle()` for the same chat id. Both append
-  to the same unlocked history list mid-loop, interleaving tool/assistant
-  messages and confusing the model. (The merged proactive-namespace work means a
-  default digest no longer shares the interactive chat's id, but same-id
-  concurrency still happens — e.g. two `notify_agent` calls, or
-  `share_history=True`.)
-- **Approach:** `self._locks: dict[str, asyncio.Lock]` keyed like `_histories`;
-  `handle()` acquires the chat's lock around the loop. Keep it simple — no
-  global lock, no queueing semantics.
-- **Acceptance:** test that two concurrent `handle()` calls for the same chat id
-  serialize (e.g. a fake backend that yields control and asserts history
-  consistency); concurrent calls for *different* chat ids still overlap.
-
-### P1-2: Tool execution has no timeout
-
-- **Type:** robustness
-- **Where:** `src/remotetoolbox/tooling/loader.py` (`Toolset.call`).
-- **Problem:** a tool that hangs (network call with no timeout) wedges its chat
-  forever — and because updates process sequentially, it wedges *all* chats.
-- **Approach:** wrap execution in `asyncio.wait_for` with a configurable
-  `tools.call_timeout` (suggest default 60s; `0` = disabled). On timeout return
-  text in the established style: `Error: tool <name> timed out after <n>s.`
-  Note: a timed-out *sync* tool thread can't be killed — document that the
-  result is abandoned, not cancelled.
-- **Acceptance:** test with a slow async tool and a tiny timeout; new config key
-  documented in `docs/CONFIGURATION.md` (the sync guard will force this) and the
-  new error string added to `docs/REFERENCE.md`'s error table.
-
-### P1-3: CI claims vs reality — mypy is never run
-
-- **Type:** process
-- **Where:** `.github/workflows/ci.yml`, `CLAUDE.md` ("Run `ruff check` and
-  `mypy src` if available"), `pyproject.toml` (mypy in dev extras).
-- **Problem:** type rot accumulates invisibly; agents are told mypy matters but
-  nothing enforces it.
-- **Approach:** add `mypy src` as a CI step. Expect to fix the errors it
-  surfaces first (keep that diff focused; `# type: ignore` with a reason is
-  acceptable where third-party stubs are missing). If the team prefers not to
-  gate on it, instead remove the claim from CLAUDE.md — pick one, don't leave
-  the mismatch.
-- **Acceptance:** CI green with mypy step (or claim removed); no unexplained
-  ignores.
-
----
-
 ## P2 — quality of life / operability
 
 ### P2-1: `remotetoolbox doctor` — manual preflight check
@@ -186,7 +133,8 @@ extra context. Work top-down within a priority band unless told otherwise.
 
 - Sequential update processing (one turn at a time) — fine for the single-tenant
   design. Revisit only with a real multi-user need (then: PTB
-  `concurrent_updates=True` + P1-1's locks).
+  `concurrent_updates=True`; the per-chat locks in `orchestrator.py` already
+  keep same-chat turns from interleaving).
 - `⚠️ {exc}` error replies may include host URLs — accepted; documented in
   `docs/SECURITY.md`.
 - Proactive-notify spam risk from a hostile/buggy tool — documented in

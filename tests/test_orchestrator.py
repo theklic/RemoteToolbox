@@ -44,6 +44,43 @@ def test_normal_reply_still_works() -> None:
     assert asyncio.run(orch.handle("c1", "hello")) == "hi there"
 
 
+class _SlowBackend(LLMBackend):
+    """Records enter/exit around a yield point so we can observe interleaving."""
+
+    def __init__(self) -> None:
+        self.events: list[str] = []
+
+    async def chat(self, messages, tools=None):
+        self.events.append("enter")
+        await asyncio.sleep(0.05)
+        self.events.append("exit")
+        return LLMMessage(role="assistant", content="ok")
+
+
+def test_same_chat_turns_are_serialized() -> None:
+    backend = _SlowBackend()
+    orch = _orch(backend)
+
+    async def go():
+        await asyncio.gather(orch.handle("c", "a"), orch.handle("c", "b"))
+
+    asyncio.run(go())
+    # With the per-chat lock the two turns don't interleave.
+    assert backend.events == ["enter", "exit", "enter", "exit"]
+
+
+def test_different_chats_run_concurrently() -> None:
+    backend = _SlowBackend()
+    orch = _orch(backend)
+
+    async def go():
+        await asyncio.gather(orch.handle("a", "x"), orch.handle("b", "y"))
+
+    asyncio.run(go())
+    # Different chats hold different locks, so they overlap.
+    assert backend.events == ["enter", "enter", "exit", "exit"]
+
+
 class _CallThenAnswer(LLMBackend):
     """First call asks to run a tool with a secret arg, then answers."""
 

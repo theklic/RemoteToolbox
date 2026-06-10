@@ -45,6 +45,8 @@ tools:
   # One or more directories scanned recursively for @tool-decorated functions.
   paths:
     - ./tools
+  # Seconds before a single tool call is abandoned (0 = no limit).
+  call_timeout: 60.0
   # Optional: connect to existing external MCP servers. See docs/WRITING_TOOLS.md.
   # mcp_servers:
   #   - name: filesystem

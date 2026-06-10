@@ -92,6 +92,9 @@ class MCPServerConfig(_Strict):
 class ToolsConfig(_Strict):
     paths: list[str] = Field(default_factory=lambda: ["./tools"])
     mcp_servers: list[MCPServerConfig] = Field(default_factory=list)
+    # Seconds before a single tool call is abandoned (0 = no limit). Stops one
+    # hung tool from wedging a chat (and, since updates are sequential, all chats).
+    call_timeout: float = 60.0
 
 
 class LoggingConfig(_Strict):

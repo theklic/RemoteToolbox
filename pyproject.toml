@@ -21,7 +21,7 @@ dependencies = [
 [project.optional-dependencies]
 telegram = ["python-telegram-bot>=21.0"]
 mcp = ["mcp>=1.0"]                          # connect to external MCP servers
-dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.9"]
+dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.9", "types-PyYAML"]
 # Convenience: install everything.
 all = ["python-telegram-bot>=21.0", "mcp>=1.0"]
 
@@ -38,6 +38,14 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+# Optional extras aren't installed in the lint/CI env, so don't fail on their
+# missing stubs (telegram, mcp). The code imports them lazily.
+[[tool.mypy.overrides]]
+module = ["telegram.*", "mcp.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

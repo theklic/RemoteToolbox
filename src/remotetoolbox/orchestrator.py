@@ -11,6 +11,7 @@ threads) don't bleed into each other.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections import defaultdict
 
@@ -33,6 +34,11 @@ class Orchestrator:
         self.agent = agent_config
         self.max_tool_rounds = agent_config.max_tool_rounds
         self._histories: dict[str, list[LLMMessage]] = defaultdict(list)
+        # One lock per chat: serialises turns for the same conversation so an
+        # interactive reply and a proactive notify_agent() (or two notifies)
+        # can't interleave appends into the same history. Different chats don't
+        # block each other.
+        self._locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
 
     def reset(self, chat_id: str) -> None:
         """Forget the conversation for one chat (e.g. a /reset command)."""
@@ -50,20 +56,21 @@ class Orchestrator:
         and returned as a readable message rather than raised, so a chat frontend
         never crashes on a transient backend error.
         """
-        history = self._histories[chat_id]
-        history.append(LLMMessage(role="user", content=user_text))
+        async with self._locks[chat_id]:
+            history = self._histories[chat_id]
+            history.append(LLMMessage(role="user", content=user_text))
 
-        messages = self._build_messages(history)
-        tools = self.toolset.ollama_tools() or None
+            messages = self._build_messages(history)
+            tools = self.toolset.ollama_tools() or None
 
-        try:
-            return await self._run(chat_id, history, messages, tools)
-        except Exception as exc:  # noqa: BLE001 - surface backend errors as chat text
-            # One clean line by default; full traceback only when debugging.
-            log.error("chat=%s agent loop failed: %s", chat_id, exc)
-            log.debug("traceback for chat=%s", chat_id, exc_info=True)
-            self._trim(history)
-            return f"⚠️ {exc}"
+            try:
+                return await self._run(chat_id, history, messages, tools)
+            except Exception as exc:  # noqa: BLE001 - surface backend errors as chat text
+                # One clean line by default; full traceback only when debugging.
+                log.error("chat=%s agent loop failed: %s", chat_id, exc)
+                log.debug("traceback for chat=%s", chat_id, exc_info=True)
+                self._trim(history)
+                return f"⚠️ {exc}"
 
     async def _run(
         self,

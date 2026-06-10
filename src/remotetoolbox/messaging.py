@@ -27,14 +27,14 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable, Coroutine
 from concurrent.futures import Future
 from typing import Any
 
 log = logging.getLogger(__name__)
 
-# (text, chat_id) -> awaitable that delivers the message.
-SendFn = Callable[[str, str], Awaitable[None]]
+# (text, chat_id) -> coroutine that delivers the message.
+SendFn = Callable[[str, str], Coroutine[Any, Any, None]]
 
 
 class _Messenger:
@@ -91,11 +91,11 @@ def _require_active() -> None:
         )
 
 
-def _schedule(make_coro: Callable[[], Awaitable[None]]) -> Future:
+def _schedule(make_coro: Callable[[], Coroutine[Any, Any, None]]) -> Future[None]:
     assert _M.loop is not None
-    fut = asyncio.run_coroutine_threadsafe(make_coro(), _M.loop)
+    fut: Future[None] = asyncio.run_coroutine_threadsafe(make_coro(), _M.loop)
 
-    def _log_err(f: Future) -> None:
+    def _log_err(f: Future[None]) -> None:
         exc = f.exception()
         if exc is not None:
             log.error("notify delivery failed: %s", exc)
@@ -104,7 +104,7 @@ def _schedule(make_coro: Callable[[], Awaitable[None]]) -> Future:
     return fut
 
 
-def notify(text: str, to: str | int | None = None) -> Future:
+def notify(text: str, to: str | int | None = None) -> Future[None]:
     """Send ``text`` to a chat, unprompted.
 
     text: The message to send.
@@ -120,7 +120,7 @@ def notify(text: str, to: str | int | None = None) -> Future:
     return _schedule(lambda: send(text, target))
 
 
-def notify_agent(prompt: str, to: str | int | None = None, *, share_history: bool = False) -> Future:
+def notify_agent(prompt: str, to: str | int | None = None, *, share_history: bool = False) -> Future[None]:
     """Run ``prompt`` through the agent (tools + LLM) and send the reply to a chat.
 
     Use this for LLM-composed messages — e.g. a morning digest where the agent
