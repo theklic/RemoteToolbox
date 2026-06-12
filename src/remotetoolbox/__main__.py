@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from pathlib import Path
 
 from .chat import build_adapter
 from .config import Config, load_config
@@ -98,8 +99,31 @@ def main() -> None:
         config.llm.ollama.model,
     )
 
+    _nudge_tools_versioning(config, log)
+
     adapter = build_adapter(config.chat, _make_assembler(config))
     adapter.serve()
+
+
+def _nudge_tools_versioning(config: Config, log: logging.Logger) -> None:
+    """One-time INFO nudge: if the user keeps tools in the default ./tools and it
+    isn't its own git repo, suggest versioning them. Fires only when ./tools is
+    actually in use (has tool files) — never for a custom tools.paths."""
+    if config.tools.paths != ["./tools"]:
+        return  # they've already pointed at a separate location
+    tools_dir = Path("./tools")
+    if (tools_dir / ".git").exists():
+        return  # already its own repo
+    has_tools = any(
+        not f.name.startswith("_") and "__pycache__" not in f.parts
+        for f in tools_dir.glob("*/*.py")
+    )
+    if not has_tools:
+        return
+    log.info(
+        "Tip: your tools in ./tools aren't versioned. Give them history + rollback "
+        "with `python -m remotetoolbox init-tools ~/rtb-tools` (see docs/MANAGING_TOOLS.md)."
+    )
 
 
 if __name__ == "__main__":

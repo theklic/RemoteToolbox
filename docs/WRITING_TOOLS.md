@@ -4,9 +4,12 @@ This is the guide you'll spend the most time in. A "tool" is a Python function
 the agent can call. You write it, drop it in `./tools`, restart, and chat to it.
 
 > Everything under `./tools` is **gitignored**. Your tools and their secrets stay
-> on your machine. See [SECURITY.md](SECURITY.md). To keep version history and a
-> changelog for your tools (in their own git repo), see
-> [MANAGING_TOOLS.md](MANAGING_TOOLS.md).
+> on your machine. See [SECURITY.md](SECURITY.md).
+>
+> **Recommended:** keep your tools in their **own git repo** from the start
+> (`python -m remotetoolbox init-tools ~/rtb-tools`) so you get version history and
+> one-command rollback when a tool breaks — see [MANAGING_TOOLS.md](MANAGING_TOOLS.md).
+> The default `./tools` works too, but it's unversioned.
 
 > 💡 **Looking for things to build against?** The community-maintained
 > [public-apis/public-apis](https://github.com/public-apis/public-apis) list is a
