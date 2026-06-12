@@ -123,6 +123,13 @@ Tools live in a folder called `tools/`. Copy in the bundled "hello" example:
 cp -r examples/tools/hello tools/hello
 ```
 
+> 👉 **Recommended for real use:** keep your tools in their **own git repo** so
+> they're versioned from day one (history + one-command rollback when a tool
+> breaks). It's one command — `python -m remotetoolbox init-tools ~/rtb-tools` —
+> then point `tools.paths` at it. Worth doing *before* you build a pile of tools.
+> See [Managing Tools](docs/MANAGING_TOOLS.md). The `cp` above is the zero-setup
+> way to just try things first.
+
 ### Step 4 — Create your settings files and run it
 
 ```bash
@@ -171,6 +178,10 @@ call `get_weather("Oslo")` and tells you the answer.
 
 👉 The full, friendly guide (passwords, more examples, do's and don'ts) is
 [**docs/WRITING_TOOLS.md**](docs/WRITING_TOOLS.md). **Start here to build things.**
+
+📚 **Before you build a few of these, version them.** Keep your tools in their own
+git repo so you get history and rollback when one breaks — `python -m remotetoolbox
+init-tools ~/rtb-tools`, then point `tools.paths` at it. See [Managing Tools](docs/MANAGING_TOOLS.md).
 
 💡 Need ideas or data sources? [public-apis/public-apis](https://github.com/public-apis/public-apis)
 is a big list of free APIs — many need no API key, so you can build a tool in minutes.

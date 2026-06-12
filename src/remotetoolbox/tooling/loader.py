@@ -109,8 +109,25 @@ def _import_file(path: Path) -> None:
     parent = str(path.parent)
     if parent not in sys.path:
         sys.path.append(parent)
+        _ADDED_SYSPATH.append(parent)
 
     spec.loader.exec_module(module)
+
+
+# Tool dirs we appended to sys.path, so a later load_tools() can drop the ones it
+# added before (avoids unbounded growth across reloads). We never remove entries
+# we didn't add — and we keep this scan's entries on the path so tools can import
+# their siblings lazily, at call time.
+_ADDED_SYSPATH: list[str] = []
+
+
+def _reset_syspath() -> None:
+    for p in _ADDED_SYSPATH:
+        try:
+            sys.path.remove(p)
+        except ValueError:
+            pass
+    _ADDED_SYSPATH.clear()
 
 
 # Directories whose contents are never tool files. Skipping these lets a tools
@@ -158,6 +175,7 @@ def _discover_dir(directory: Path) -> None:
 async def load_tools(config: ToolsConfig) -> Toolset:
     """Scan configured paths (and MCP servers) and return a ready Toolset."""
     clear_registry()
+    _reset_syspath()  # drop tool dirs a previous scan added before re-scanning
     for raw_path in config.paths:
         _discover_dir(Path(raw_path).expanduser())
 

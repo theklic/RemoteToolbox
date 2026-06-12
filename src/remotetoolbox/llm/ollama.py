@@ -10,6 +10,7 @@ Docs: https://github.com/ollama/ollama/blob/main/docs/api.md
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from typing import Any
 
@@ -18,13 +19,15 @@ import httpx
 from ..config import OllamaConfig
 from .base import LLMBackend, LLMMessage, ToolCall
 
+log = logging.getLogger(__name__)
+
 
 class OllamaBackend(LLMBackend):
     def __init__(self, config: OllamaConfig) -> None:
         self.config = config
         self._client = httpx.AsyncClient(
             base_url=config.host.rstrip("/"),
-            timeout=httpx.Timeout(120.0, connect=10.0),
+            timeout=httpx.Timeout(config.request_timeout, connect=10.0),
         )
 
     async def chat(
@@ -42,20 +45,34 @@ class OllamaBackend(LLMBackend):
         if self.config.options:
             payload["options"] = self.config.options
 
-        try:
-            resp = await self._client.post("/api/chat", json=payload)
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            raise RuntimeError(
-                f"Ollama returned {exc.response.status_code}: {exc.response.text[:300]}"
-            ) from exc
-        except httpx.HTTPError as exc:
-            raise RuntimeError(
-                f"Could not reach Ollama at {self.config.host}: {exc}. "
-                f"Is `ollama serve` running and the model pulled?"
-            ) from exc
-
-        return self._from_wire(resp.json().get("message", {}))
+        # One cheap retry on transient connection blips (not on HTTP-status errors).
+        attempts = 2
+        for attempt in range(attempts):
+            try:
+                resp = await self._client.post("/api/chat", json=payload)
+                resp.raise_for_status()
+                return self._from_wire(resp.json().get("message", {}))
+            except httpx.HTTPStatusError as exc:
+                raise RuntimeError(
+                    f"Ollama returned {exc.response.status_code}: {exc.response.text[:300]}"
+                ) from exc
+            except (httpx.ConnectError, httpx.ReadTimeout) as exc:
+                if attempt + 1 < attempts:
+                    log.warning(
+                        "Ollama %s (attempt %d/%d), retrying…",
+                        type(exc).__name__, attempt + 1, attempts,
+                    )
+                    continue
+                raise RuntimeError(
+                    f"Could not reach Ollama at {self.config.host}: {exc}. "
+                    f"Is `ollama serve` running and the model pulled?"
+                ) from exc
+            except httpx.HTTPError as exc:
+                raise RuntimeError(
+                    f"Could not reach Ollama at {self.config.host}: {exc}. "
+                    f"Is `ollama serve` running and the model pulled?"
+                ) from exc
+        raise AssertionError("unreachable")  # pragma: no cover
 
     # --- translation ---------------------------------------------------------
 

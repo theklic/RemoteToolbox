@@ -26,6 +26,8 @@ llm:
     # Sampling options passed through to Ollama (all optional).
     options:
       temperature: 0.4
+    # Per-request timeout in seconds (generation can be slow on modest hardware).
+    request_timeout: 120.0
 
 # The agent's behaviour.
 agent:

@@ -22,11 +22,15 @@ credentials are gitignored and never committed.
 
 This is what most users will ask. Do exactly this:
 
-1. Create the file at `tools/<name>/tool.py` — **yes, really under `tools/`.**
-   That dir is gitignored (so the tool stays private and you won't — and
-   shouldn't — `git add` it), but the file must exist there because that's where
-   RemoteToolbox discovers tools at startup. Creating it is correct; committing
-   it is not.
+1. Put the file in the user's **tools directory**. Default assumption: they keep
+   tools in their **own versioned repo** (`tools.paths` points at it) — that's the
+   recommended setup. If they don't have one yet, suggest creating it *before* the
+   first tool: `python -m remotetoolbox init-tools ~/rtb-tools` (gives history +
+   rollback), then add the tool there. If they decline or just want a quick try,
+   fall back to the default `./tools`. Either way the file lands in a **gitignored**
+   tools directory — **never `git add`/commit it to *this* framework repo.** Create
+   it as `<tools-dir>/<name>/tool.py` — yes, really *in* a tools dir; gitignored
+   means private, not off-limits. Creating it is correct; committing it is not.
 2. Write a function decorated with `@tool` from `remotetoolbox`:
 
    ```python
@@ -59,12 +63,13 @@ only sends; the tool owns when/why (no built-in scheduler). See
 Full details: [`docs/WRITING_TOOLS.md`](docs/WRITING_TOOLS.md). Copyable
 examples: [`examples/tools/`](examples/tools/).
 
-**If the user versions their tools** (there's a `CHANGELOG.md` in the tools
-directory, or `tools.paths` points at a separate repo), add an entry to that
-`CHANGELOG.md` — a new dated `## YYYY-MM-DD` heading as the template shows —
-describing what you added/changed, and commit it to the **user's tools repo —
-never this one**. To set up such a repo, point them at
-`python -m remotetoolbox init-tools <path>`. See
+**Assume the user has a versioned tools repo** (a `CHANGELOG.md` in the tools
+directory, or `tools.paths` points at a separate repo) — the separate tools repo
+is the recommended default, not an advanced option. When you add/change a tool,
+add a dated `## YYYY-MM-DD` entry to that `CHANGELOG.md` (as the template shows)
+and commit it to the **user's tools repo — never this one**. If there's no tools
+repo yet, suggest setting one up first with `python -m remotetoolbox init-tools
+<path>` so their tools have history from day one. See
 [`docs/MANAGING_TOOLS.md`](docs/MANAGING_TOOLS.md).
 
 ### Do NOT, when adding a tool:

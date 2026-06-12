@@ -382,6 +382,7 @@ CLI:
 |---|---|
 | `python -m remotetoolbox [-c PATH] [--env PATH]` | Run the chat agent (default). |
 | `python -m remotetoolbox init-tools <path> [--no-git]` | Scaffold a personal tools repo from `examples/tools-repo` (copy + `git init` + first commit). See [MANAGING_TOOLS.md](MANAGING_TOOLS.md). `--no-git` copies files only. |
+| `python -m remotetoolbox doctor` | Preflight check (Ollama reachable + model pulled, Telegram token/allowlist, tools paths, discovered tool count). Exits non-zero if any check fails. Implemented in [`doctor.py`](../src/remotetoolbox/doctor.py). |
 
 (`remotetoolbox` is also installed as a console script equivalent to
 `python -m remotetoolbox`.) `init-tools` is implemented in

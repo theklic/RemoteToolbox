@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+from pathlib import Path
 
 from .chat import build_adapter
 from .config import Config, load_config
@@ -71,11 +72,21 @@ def main() -> None:
         "--no-git", action="store_true", help="Copy files only; don't run git init/commit."
     )
 
+    sub.add_parser("doctor", help="Check your setup (Ollama, token, tools) and report problems.")
+
     args = parser.parse_args()
 
     if args.command == "init-tools":
         _cmd_init_tools(args.path, args.no_git)
         return
+
+    if args.command == "doctor":
+        import asyncio
+
+        from .doctor import gather_checks, render
+
+        config = load_config(args.config, args.env)
+        raise SystemExit(render(asyncio.run(gather_checks(config))))
 
     # Default (no subcommand): run the chat agent.
     config = load_config(args.config, args.env)
@@ -88,8 +99,31 @@ def main() -> None:
         config.llm.ollama.model,
     )
 
+    _nudge_tools_versioning(config, log)
+
     adapter = build_adapter(config.chat, _make_assembler(config))
     adapter.serve()
+
+
+def _nudge_tools_versioning(config: Config, log: logging.Logger) -> None:
+    """One-time INFO nudge: if the user keeps tools in the default ./tools and it
+    isn't its own git repo, suggest versioning them. Fires only when ./tools is
+    actually in use (has tool files) — never for a custom tools.paths."""
+    if config.tools.paths != ["./tools"]:
+        return  # they've already pointed at a separate location
+    tools_dir = Path("./tools")
+    if (tools_dir / ".git").exists():
+        return  # already its own repo
+    has_tools = any(
+        not f.name.startswith("_") and "__pycache__" not in f.parts
+        for f in tools_dir.glob("*/*.py")
+    )
+    if not has_tools:
+        return
+    log.info(
+        "Tip: your tools in ./tools aren't versioned. Give them history + rollback "
+        "with `python -m remotetoolbox init-tools ~/rtb-tools` (see docs/MANAGING_TOOLS.md)."
+    )
 
 
 if __name__ == "__main__":

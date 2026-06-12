@@ -80,6 +80,7 @@ default shown.
 | `llm.ollama.host` | string | `http://localhost:11434` | Base URL of the Ollama server. Use `${OLLAMA_HOST}`. |
 | `llm.ollama.model` | string | `llama3.1` | Model name. **Must support tool calling** (e.g. `llama3.1`, `qwen2.5`, `mistral-nemo`). |
 | `llm.ollama.options` | map | `{}` | Passed straight to Ollama's `options` (e.g. `temperature`, `num_ctx`, `top_p`). See Ollama docs. |
+| `llm.ollama.request_timeout` | float | `120.0` | Per-request timeout in seconds (generation can be slow on modest hardware). One transient connection blip is retried once. |
 
 ### `agent`
 

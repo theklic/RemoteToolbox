@@ -144,6 +144,14 @@ sudo systemctl restart remotetoolbox      # or Ctrl-C + rerun in dev
 
 ## Troubleshooting
 
+**First, run the preflight check** — it diagnoses most setup problems in one go
+(Ollama reachable + model pulled, Telegram token/allowlist, tools paths,
+discovered tool count):
+
+```bash
+python -m remotetoolbox doctor
+```
+
 Symptom-based quick table below. For the **exact error string** you saw and its
 fix, see [Reference → Error & message reference](REFERENCE.md#error--message-reference).
 To see more detail while debugging, set `logging.level: DEBUG` in `config.yaml` —
