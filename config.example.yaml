@@ -15,6 +15,9 @@ chat:
     token: ${TELEGRAM_BOT_TOKEN}
     # Comma-separated allowlist of Telegram user IDs (from env).
     allowed_users: ${RTB_ALLOWED_USERS}
+    # Where to write per-chat history transcripts (JSONL, one file per chat).
+    # GITIGNORED by default — transcripts hold private content. "" disables it.
+    history_dir: logs/telegram
 
 # The local LLM backend. Today: ollama. The interface is pluggable
 # (see docs/ARCHITECTURE.md) so other backends can be added.

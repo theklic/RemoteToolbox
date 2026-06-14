@@ -17,6 +17,7 @@ import logging
 from .. import messaging
 from ..config import TelegramConfig
 from .base import Assemble, ChatAdapter
+from .transcript import TranscriptLog
 
 log = logging.getLogger(__name__)
 
@@ -64,6 +65,10 @@ class TelegramAdapter(ChatAdapter):
                 "RTB_ALLOWED_USERS is empty: the bot will refuse EVERYONE. "
                 "Add your Telegram user ID to talk to it."
             )
+        # Per-chat transcript logging (gitignored). Disabled when history_dir is "".
+        self.transcript = TranscriptLog(config.history_dir)
+        if self.transcript.enabled:
+            log.info("Logging chat history to %s/ (gitignored).", self.transcript.directory)
 
     def serve(self) -> None:
         from telegram import Update
@@ -86,6 +91,7 @@ class TelegramAdapter(ChatAdapter):
             # Wire outbound messaging so tools can notify() proactively. Sends go
             # through the running bot; default target is the first allowed user.
             async def _send(text: str, to: str) -> None:
+                self.transcript.record(to, "out", text)
                 for part in _chunks(text):
                     await app.bot.send_message(chat_id=int(to), text=part)  # type: ignore[attr-defined]
 
@@ -108,8 +114,12 @@ class TelegramAdapter(ChatAdapter):
                 return
             assert self.orchestrator is not None
             chat_id = str(update.effective_chat.id)
+            user_text = update.message.text or ""
+            user = update.effective_user
+            self.transcript.record(chat_id, "in", user_text, user_id=user.id if user else None)
             await ctx.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
-            reply = await self.orchestrator.handle(chat_id, update.message.text or "")
+            reply = await self.orchestrator.handle(chat_id, user_text)
+            self.transcript.record(chat_id, "out", reply)
             for part in _chunks(reply):
                 await update.message.reply_text(part)
 

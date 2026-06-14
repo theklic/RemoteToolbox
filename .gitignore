@@ -61,6 +61,8 @@ env/
 htmlcov/
 
 # --- Runtime state -----------------------------------------------------------
+# `logs/` also holds Telegram chat-history transcripts (chat.telegram.history_dir
+# defaults to logs/telegram). These can contain private content — never commit.
 *.log
 logs/
 *.sqlite
