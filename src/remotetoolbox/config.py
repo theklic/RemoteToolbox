@@ -39,6 +39,9 @@ class _Strict(BaseModel):
 class TelegramConfig(_Strict):
     token: str = ""
     allowed_users: str = ""  # comma-separated user IDs
+    # Directory for per-chat JSONL transcripts (one file per chat). Gitignored by
+    # default; set "" to disable chat-history logging entirely.
+    history_dir: str = "logs/telegram"
 
     @property
     def allowed_user_ids_ordered(self) -> list[int]:

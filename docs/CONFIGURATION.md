@@ -68,6 +68,7 @@ default shown.
 | `chat.adapter` | string | `console` | Which frontend to run. Built-in: `console`, `telegram`. Unknown values raise at startup. |
 | `chat.telegram.token` | string | `""` | Telegram bot token. Use `${TELEGRAM_BOT_TOKEN}`. Required when `adapter: telegram`. |
 | `chat.telegram.allowed_users` | string | `""` | Comma-separated Telegram numeric user IDs allowed to chat. **Empty = nobody** (safe default). Use `${RTB_ALLOWED_USERS}`. |
+| `chat.telegram.history_dir` | string | `logs/telegram` | Directory for per-chat JSONL transcripts (one `<chat_id>.jsonl` file per conversation, plus proactive sends). **Gitignored by default** (`logs/`) — transcripts hold private content, never commit them. Set `""` to disable chat-history logging. |
 
 > Only the block for the **active** adapter needs to be valid. With
 > `adapter: console`, the `telegram` block is ignored.
