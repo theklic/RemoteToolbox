@@ -150,6 +150,12 @@ so keep them working when you change the `@tool` API.
 
 ## Git rules (important)
 
+> **Scope: this repo only.** The machine-wide rules are in `~/CLAUDE.md` §Git —
+> commit and push after every session, nothing of value stays only on this box.
+> The no-PR rule below is a *local override* of the workflow other repos use
+> (lens-specs is PR-based), so it applies here and nowhere else.
+
+
 - Develop framework/doc changes normally and commit them.
 - **Never commit** anything under `tools/`, `.env`, `config.yaml`, or any
   credential. `.gitignore` enforces this — keep it that way. (Creating tool files
