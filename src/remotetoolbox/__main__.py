@@ -96,7 +96,7 @@ def main() -> None:
         "Starting RemoteToolbox: chat=%s llm=%s/%s",
         config.chat.adapter,
         config.llm.backend,
-        config.llm.ollama.model,
+        config.llm.openai.model if config.llm.backend == "openai" else config.llm.ollama.model,
     )
 
     _nudge_tools_versioning(config, log)
