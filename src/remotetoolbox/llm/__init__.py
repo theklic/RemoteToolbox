@@ -1,4 +1,4 @@
-"""LLM backends. Today: Ollama. The :class:`LLMBackend` interface is the
+"""LLM backends. Today: Ollama and OpenAI-style servers (e.g. llama.cpp). The :class:`LLMBackend` interface is the
 extension point — implement it to add another local (or remote) model server.
 """
 
@@ -16,7 +16,11 @@ def build_backend(config: LLMConfig) -> LLMBackend:
         from .ollama import OllamaBackend
 
         return OllamaBackend(config.ollama)
+    if config.backend == "openai":
+        from .openai import OpenAIBackend
+
+        return OpenAIBackend(config.openai)
     raise ValueError(
         f"Unknown llm.backend {config.backend!r}. "
-        f"Built-in option: 'ollama'. See docs/ARCHITECTURE.md to add one."
+        f"Built-in options: 'ollama', 'openai'. See docs/ARCHITECTURE.md to add one."
     )

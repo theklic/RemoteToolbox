@@ -95,7 +95,7 @@ class Orchestrator:
                 log.info("chat=%s calling tool %s(%s)", chat_id, call.name, ", ".join(call.arguments))
                 log.debug("chat=%s tool %s args=%r", chat_id, call.name, call.arguments)
                 result = await self.toolset.call(call.name, call.arguments)
-                tool_msg = LLMMessage(role="tool", content=result, name=call.name)
+                tool_msg = LLMMessage(role="tool", content=result, name=call.name, tool_call_id=call.id)
                 messages.append(tool_msg)
                 history.append(tool_msg)
 

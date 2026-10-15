@@ -31,6 +31,7 @@ class LLMMessage:
     content: str = ""
     tool_calls: list[ToolCall] = field(default_factory=list)
     name: str | None = None  # tool name, for role == "tool"
+    tool_call_id: str | None = None  # for role == "tool": the ToolCall.id it answers
 
 
 class LLMBackend(ABC):

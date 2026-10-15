@@ -77,11 +77,16 @@ default shown.
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| `llm.backend` | string | `ollama` | Model backend. Built-in: `ollama`. Unknown values raise at startup. |
+| `llm.backend` | string | `ollama` | Model backend. Built-in: `ollama`, `openai` (any OpenAI-style server such as llama.cpp). Unknown values raise at startup. |
 | `llm.ollama.host` | string | `http://localhost:11434` | Base URL of the Ollama server. Use `${OLLAMA_HOST}`. |
 | `llm.ollama.model` | string | `llama3.1` | Model name. **Must support tool calling** (e.g. `llama3.1`, `qwen2.5`, `mistral-nemo`). |
 | `llm.ollama.options` | map | `{}` | Passed straight to Ollama's `options` (e.g. `temperature`, `num_ctx`, `top_p`). See Ollama docs. |
 | `llm.ollama.request_timeout` | float | `120.0` | Per-request timeout in seconds (generation can be slow on modest hardware). One transient connection blip is retried once. |
+| `llm.openai.host` | string | `http://localhost:8080` | Base URL of an OpenAI-style server (`/v1/chat/completions`), e.g. llama.cpp's `llama-server`. Used when `llm.backend: openai`. |
+| `llm.openai.model` | string | `""` | Model name or alias to request. Empty sends none (a single-model server ignores it). |
+| `llm.openai.options` | map | `{}` | Extra request fields sent as-is, e.g. `temperature`, `max_tokens`, `chat_template_kwargs: {enable_thinking: false}`. |
+| `llm.openai.request_timeout` | float | `120.0` | Per-request timeout in seconds. A shared server may make a request wait its turn; raise this if so. |
+| `llm.openai.wait_for_server` | float | `60.0` | Seconds to keep retrying while the server is unreachable (restarting) or answers 503 (loading its model). |
 
 ### `agent`
 

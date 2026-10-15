@@ -74,9 +74,23 @@ class OllamaConfig(_Strict):
     request_timeout: float = 120.0
 
 
+class OpenAIConfig(_Strict):
+    """Any server with an OpenAI-style ``/v1/chat/completions`` (llama.cpp's
+    llama-server, vLLM, LM Studio, ...)."""
+
+    host: str = "http://localhost:8080"
+    model: str = ""
+    # Extra request fields sent as-is (e.g. temperature, max_tokens, chat_template_kwargs).
+    options: dict[str, Any] = Field(default_factory=dict)
+    request_timeout: float = 120.0
+    # How long to keep retrying while the server is unreachable or still loading (503).
+    wait_for_server: float = 60.0
+
+
 class LLMConfig(_Strict):
     backend: str = "ollama"
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
+    openai: OpenAIConfig = Field(default_factory=OpenAIConfig)
 
 
 class AgentConfig(_Strict):

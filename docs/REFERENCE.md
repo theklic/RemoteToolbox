@@ -400,7 +400,7 @@ for the text you saw.)
 |---|---|---|
 | `Could not reach Ollama at <host>: … Is \`ollama serve\` running and the model pulled?` | `llm/ollama.py` | Ollama unreachable. Start `ollama serve`; verify `OLLAMA_HOST`; confirm the model is pulled. |
 | `Ollama returned <code>: <body>` | `llm/ollama.py` | Ollama responded with an HTTP error. Common: model name wrong/not pulled (`ollama pull <model>`), or the model doesn't support tools. |
-| `Unknown llm.backend '<x>'. Built-in option: 'ollama'. …` | `llm/__init__.py` | `llm.backend` typo, or a backend you haven't registered. Use `ollama` or add one. |
+| `Unknown llm.backend '<x>'. Built-in options: 'ollama', 'openai'. …` | `llm/__init__.py` | `llm.backend` typo, or a backend you haven't registered. Use `ollama`, `openai`, or add one. |
 | `Unknown chat.adapter '<x>'. Built-in options: 'console', 'telegram'. …` | `chat/__init__.py` | `chat.adapter` typo, or an unregistered adapter. |
 | `Telegram adapter selected but TELEGRAM_BOT_TOKEN is empty. …` | `chat/telegram.py` | `adapter: telegram` but no token. Set `TELEGRAM_BOT_TOKEN` in `.env`. |
 | `RTB_ALLOWED_USERS is empty: the bot will refuse EVERYONE. …` (warning) | `chat/telegram.py` | The bot starts but rejects all users. Add your numeric Telegram ID to `RTB_ALLOWED_USERS`. |
