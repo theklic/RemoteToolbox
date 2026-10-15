@@ -152,8 +152,7 @@ so keep them working when you change the `@tool` API.
 
 > **Scope: this repo only.** The machine-wide rules are in `~/CLAUDE.md` §Git —
 > commit and push after every session, nothing of value stays only on this box.
-> The no-PR rule below is a *local override* of the workflow other repos use
-> (lens-specs is PR-based), so it applies here and nowhere else.
+> Changes reach `main` through a pull request, as in the owner's other repos.
 
 
 - Develop framework/doc changes normally and commit them.
@@ -167,7 +166,8 @@ so keep them working when you change the `@tool` API.
   git ls-files | grep -E '^tools/|^\.env$|^config\.yaml$' \
     | grep -vE '^tools/(README\.md|\.gitkeep)$' || echo clean
   ```
-- Do not create pull requests unless the user explicitly asks.
+- Every change reaches `main` through a pull request: branch off `origin/main`,
+  push the branch, open the PR. Never commit or push directly to `main`.
 
 ## Where to look things up
 
