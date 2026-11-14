@@ -75,6 +75,10 @@ Three things. Don't worry — each links to a friendly install page.
 | **Ollama** | A free app that runs an AI model *on your own computer* (no internet, no account). | [ollama.com](https://ollama.com) |
 | **A Telegram account** *(optional)* | Only if you want to chat from your phone. You can skip this at first and chat from your computer's terminal instead. | [telegram.org](https://telegram.org) |
 
+> Already run **llama.cpp** (`llama-server`) or another OpenAI-style model server?
+> You can use it instead of Ollama: set `llm.backend: openai` in `config.yaml`.
+> See [Configuration](docs/CONFIGURATION.md).
+
 > 💡 **Not sure you can do this yourself?** Open this project in
 > [Claude Code](https://claude.com/code) and say *"help me set up RemoteToolbox."*
 > It can read [CLAUDE.md](CLAUDE.md) and do most of the work with you.

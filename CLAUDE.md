@@ -6,8 +6,8 @@ as a contributor cheat-sheet.
 
 ## What this project is
 
-A self-hosted framework: **chat frontend → local LLM (Ollama) → user-written
-tools**. The repo ships **framework + docs only**. Users' actual tools and all
+A self-hosted framework: **chat frontend → local LLM (Ollama, or any OpenAI-style
+server such as llama.cpp) → user-written tools**. The repo ships **framework + docs only**. Users' actual tools and all
 credentials are gitignored and never committed.
 
 > **This does NOT mean "don't create tools here."** Tools you write **go in the
@@ -93,7 +93,7 @@ src/remotetoolbox/
 ├── orchestrator.py    the agent loop (chat → LLM → tools → reply)
 ├── messaging.py       notify()/notify_agent() — proactive outbound messages  ← PUBLIC API
 ├── scaffold.py        `init-tools` — scaffolds a user's separate tools repo
-├── llm/               LLMBackend interface + Ollama backend
+├── llm/               LLMBackend interface + Ollama and OpenAI-style backends
 ├── chat/              ChatAdapter interface + console/telegram adapters
 └── tooling/           tool discovery (loader) + optional external MCP client
 tools/                 USER tools live here — GITIGNORED
